@@ -1,17 +1,9 @@
-# ********************************** #
-# *** - Project Specific Files - *** #
-# ********************************** #
-/output
-user-preferences.md
-
-
-# **************************** #
-# *** - macOS File Types - *** #
-# **************************** #
 # General
 .DS_Store
 .AppleDouble
 .LSOverride
+Thumbs.db
+/temp-prj-notes
 
 # Claude
 .claude/
@@ -19,45 +11,25 @@ user-preferences.md
 
 # Node / Vite
 node_modules
-dist/
+vite.config.js.timestamp-*
+vite.config.ts.timestamp-*
 
-# Icon must end with two \r
-Icon
-
-# Thumbnails
-._*
-
-# Files that might appear in the root of a volume
-.DocumentRevisions-V100
-.fseventsd
-.Spotlight-V100
-.TemporaryItems
-.Trashes
-.VolumeIcon.icns
-.com.apple.timemachine.donotpresent
-
-# Directories potentially created on remote AFP share
-.AppleDB
-.AppleDesktop
-Network Trash Folder
-Temporary Items
-.apdisk
+# Output
+.output
+.vercel
+.netlify
+.wrangler
+/.svelte-kit
+/build
+/output
+user-preferences.md
 
 
-# ***************************** #
-# *** - VSCode File Types - *** #
-# ***************************** #
-.vscode/*
-!.vscode/settings.json
-!.vscode/tasks.json
-!.vscode/launch.json
-!.vscode/extensions.json
-!.vscode/*.code-snippets
-!.vscode/cspell.json
-!.vscode/custom-words.txt
+# Env
+.env
+.env.*
+!.env.example
+!.env.test
 
-# Local History for Visual Studio Code
-.history/
-
-# Built Visual Studio Code Extensions
-*.vsix
+# Playwright
+test-results
