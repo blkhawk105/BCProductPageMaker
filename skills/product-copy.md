@@ -3,7 +3,9 @@
 Writes PDP body copy and feature bullets for music instrument and pro audio products. Copy is grounded in confirmed specs, written in a consistent store voice, and designed to educate as much as it sells.
 
 ## Dependencies
+
 Read before acting:
+
 - `registry/user-preferences.md` (always)
 - `registry/brand-registry.md` (manufacturer URL lookup)
 - `skills/module-guidelines.md` (universal rules)
@@ -11,9 +13,10 @@ Read before acting:
 ---
 
 ## Required Inputs
+
 - **Brand**: Manufacturer name
 - **Model**: Product model name/number
-- **SKU / Variant** *(recommended)*: Specific finish, color, or configuration
+- **SKU / Variant** _(recommended)_: Specific finish, color, or configuration
 - **Specs**: Read from `output/[Brand]/[Model]/[SKU]/product-features.md` — this file is written by `skills/product-specs.md` and must exist before this skill runs
 
 If `product-features.md` does not exist, stop and ask the user to run product-specs first. Do not write copy from memory or assumption.
@@ -65,6 +68,7 @@ Before writing, understand what you're describing:
 The store's voice is **friendly, professional, and educational.** It respects the customer's intelligence without assuming expertise. It sells by informing, not by exciting.
 
 ### Do
+
 - Write in plain, confident prose
 - Explain technical terms inline when they'd be unfamiliar to a non-player
 - Let the product's genuine qualities speak — if something is well-made or thoughtfully designed, say so and say why
@@ -72,6 +76,7 @@ The store's voice is **friendly, professional, and educational.** It respects th
 - Match energy to the product: a $400 student bass gets warm and approachable copy; a $2,000 pro instrument gets more precise and assured copy
 
 ### Don't
+
 - Use AI-typical filler phrases: "whether you're a beginner or a seasoned pro," "takes your playing to the next level," "perfect for any occasion," "look no further"
 - Stack adjectives: "stunning," "incredible," "revolutionary," "game-changing"
 - Make claims the manufacturer didn't make
@@ -84,9 +89,11 @@ The store's voice is **friendly, professional, and educational.** It respects th
 ## Copy Structure
 
 ### Body Copy
+
 Long-form prose forming the main PDP description. Use plain paragraphs, or `[h3 / p / p]` sectioning if the product complexity warrants it. Do not force sections onto simple products.
 
 A typical flow for an instrument:
+
 1. **What it is and who it's for** — orient the reader without overselling
 2. **Construction and materials** — what it's made of and why that matters
 3. **Sound and playability** — what to expect from it in practice
@@ -96,15 +103,18 @@ A typical flow for an instrument:
 For non-instrument products (cables, stands, lighting, etc.), adapt the flow to what actually matters for that product type.
 
 **Length guidance:**
+
 - Simple accessories: 1–2 paragraphs
 - Student/entry instruments: 2–3 paragraphs
 - Mid-range instruments: 3–4 paragraphs
 - Pro instruments or complex gear: 4–6 paragraphs or sectioned layout
 
 ### Tonal Description (Required for All Instruments)
+
 For any instrument with pickups, strings, or a sound-producing mechanism, the copy **must include a tonal description** — not just what the pickups are, but what the instrument actually sounds like in player terms.
 
 **Write in player language, not spec language:**
+
 - Not: "Two JB-style single-coil pickups deliver a clear, punchy tone"
 - Yes: "articulate highs, focused mids, and tight low-end response"
 
@@ -112,32 +122,36 @@ Tonal descriptors should be specific enough to be useful for genre and applicati
 
 **Common player-language tonal vocabulary (reference, not a list to copy):**
 
-| Instead of... | Consider... |
-|---------------|-------------|
-| "warm tone" | "full low mids, smooth on the high end" |
-| "bright tone" | "present upper register, cuts through a mix" |
-| "versatile" | "suits funk, blues, and rock equally well" |
-| "punchy" | "tight low end, strong note attack" |
-| "clear" | "articulate note separation, defined highs" |
-| "balanced" | "even response across the range, no frequency spikes" |
+| Instead of... | Consider...                                           |
+| ------------- | ----------------------------------------------------- |
+| "warm tone"   | "full low mids, smooth on the high end"               |
+| "bright tone" | "present upper register, cuts through a mix"          |
+| "versatile"   | "suits funk, blues, and rock equally well"            |
+| "punchy"      | "tight low end, strong note attack"                   |
+| "clear"       | "articulate note separation, defined highs"           |
+| "balanced"    | "even response across the range, no frequency spikes" |
 
 Don't stack descriptors — two or three specific ones are more useful than five vague ones.
 
 ### Style Benchmark
+
 This is a human-written example that represents the target voice. Use it as a calibration reference — not to copy, but to match the register, confidence, and economy of language:
 
-> *"Equipped with two JB‑style single‑coil pickups, this bass provides articulate highs, focused mids, and tight low‑end response — ideal for funk, blues, rock, and traditional jazz tones. Its electronics layout includes master volume, master tone, plus bass and treble controls, giving players added tonal shaping without sacrificing simplicity. Vintage‑inspired appointments such as a bone nut, vintage bridge, and vintage‑style tuning machines enhance tuning stability while reinforcing the bass's classic character."*
+> _"Equipped with two JB‑style single‑coil pickups, this bass provides articulate highs, focused mids, and tight low‑end response — ideal for funk, blues, rock, and traditional jazz tones. Its electronics layout includes master volume, master tone, plus bass and treble controls, giving players added tonal shaping without sacrificing simplicity. Vintage‑inspired appointments such as a bone nut, vintage bridge, and vintage‑style tuning machines enhance tuning stability while reinforcing the bass's classic character."_
 
 Note what this does well:
+
 - Groups hardware details efficiently in one sentence rather than spotlighting each
 - Names specific tonal characteristics ("articulate highs, focused mids, tight low end")
 - States benefits without over-explaining how they're achieved
 - Closes with a phrase ("classic character") that ties aesthetics to function
 
 ### Inline Explanations
-When the copy touches on something genuinely unfamiliar to a non-player, a brief inline explanation can add real value. The key word is *brief* — one clause, not a paragraph.
+
+When the copy touches on something genuinely unfamiliar to a non-player, a brief inline explanation can add real value. The key word is _brief_ — one clause, not a paragraph.
 
 The test before adding an explanation:
+
 1. Would a first-time buyer be confused without it? If no, skip it.
 2. Can it be said in half a sentence woven naturally into the prose? If not, it's probably too deep for copy.
 3. Lead with the benefit, not the property. Players care what it does, not how it does it.
@@ -151,7 +165,7 @@ The test before adding an explanation:
 - Educational additions (inline explanations) are permitted — these are your words, not manufacturer claims
 - If a claim is uncertain, omit it — do not hedge with "may" or "reportedly"
 - Report source at the end of the copy output:
-  > *Copy based on manufacturer description: [source URL]*
+  > _Copy based on manufacturer description: [source URL]_
 
 ---
 
@@ -207,17 +221,17 @@ After `product-description.md` is written, end the session with:
 >
 > **Full build — Step 5 is next: seo**
 > End this session, then continue with:
-> *"Run seo for [Brand] [Model] [SKU]"*"
+> _"Run seo for [Brand] [Model] [SKU]"_"
 
 ---
 
 ## Edge Cases
 
-| Situation | Action |
-|-----------|--------|
-| No manufacturer copy found | Write from spec table and press materials; note this in source line |
-| `product-features.md` not found | Stop — tell the user product-specs must run first before copy can be written |
-| Product is a bundle/kit | Write for the bundle as a whole; note key included components |
-| Very simple product | Body copy may be 1–2 paragraphs; note brevity at end of output |
-| Manufacturer copy is very thin | Use what exists; supplement with spec table only — do not invent |
+| Situation                                  | Action                                                                               |
+| ------------------------------------------ | ------------------------------------------------------------------------------------ |
+| No manufacturer copy found                 | Write from spec table and press materials; note this in source line                  |
+| `product-features.md` not found            | Stop — tell the user product-specs must run first before copy can be written         |
+| Product is a bundle/kit                    | Write for the bundle as a whole; note key included components                        |
+| Very simple product                        | Body copy may be 1–2 paragraphs; note brevity at end of output                       |
+| Manufacturer copy is very thin             | Use what exists; supplement with spec table only — do not invent                     |
 | Conflicting specs flagged by product-specs | Do not use the conflicting value in copy; omit or use the manufacturer US site value |

@@ -5,6 +5,7 @@ Audits a completed (or in-progress) product build against the project's quality 
 ## Dependencies
 
 Read before acting:
+
 - `registry/user-preferences.md` (always)
 - `skills/module-guidelines.md` (universal rules)
 - `reference/Custom_Fields_Product_Filters.md` (needed for Step 2 category check)
@@ -25,13 +26,13 @@ All content to review is read from `output/[Brand]/[Model]/[SKU]/`. Do not visit
 
 List every file and folder present in `output/[Brand]/[Model]/[SKU]/`. Map what exists to the steps that produced it:
 
-| Files present | Steps complete |
-|---|---|
-| `product-features.md` only | Step 1 |
-| `+ product-bc-custom-fields.md` | Steps 1–2 |
-| `+ images/` folder | Steps 1–3 |
-| `+ product-description.md` (no `## SEO` heading) | Steps 1–4 |
-| `+ product-description.md` (has `## SEO` heading) | Steps 1–5 |
+| Files present                                                | Steps complete            |
+| ------------------------------------------------------------ | ------------------------- |
+| `product-features.md` only                                   | Step 1                    |
+| `+ product-bc-custom-fields.md`                              | Steps 1–2                 |
+| `+ images/` folder                                           | Steps 1–3                 |
+| `+ product-description.md` (no `## SEO` heading)             | Steps 1–4                 |
+| `+ product-description.md` (has `## SEO` heading)            | Steps 1–5                 |
 | `+ product-description.md` (has `## Image Alt Text` heading) | Steps 1–6, build complete |
 
 Report this as the first section of the review output. If the build is incomplete, continue reviewing whatever steps are present — do not stop at the first missing file.
@@ -48,12 +49,12 @@ Read the file. Run every check. Report each as ✅ (pass) / ⚠️ (warning — 
 
 These must never appear as rows in the spec table or anywhere in this file:
 
-| Field type | Examples to watch for |
-|---|---|
-| Pricing | `MSRP`, `Price`, `Street Price`, `MAP`, `Cost` |
-| Ratings / reviews | `Rating`, `Reviews`, `Stars`, `Review Count` |
-| Availability | `Stock`, `Inventory`, `In Stock`, `Ships in` |
-| Bad extraction | Any spec key that is not a real English product attribute — misspelled words, OCR artifacts, page navigation fragments (e.g., `Plank`, `Add to Cart`, `Ships From`) |
+| Field type        | Examples to watch for                                                                                                                                               |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Pricing           | `MSRP`, `Price`, `Street Price`, `MAP`, `Cost`                                                                                                                      |
+| Ratings / reviews | `Rating`, `Reviews`, `Stars`, `Review Count`                                                                                                                        |
+| Availability      | `Stock`, `Inventory`, `In Stock`, `Ships in`                                                                                                                        |
+| Bad extraction    | Any spec key that is not a real English product attribute — misspelled words, OCR artifacts, page navigation fragments (e.g., `Plank`, `Add to Cart`, `Ships From`) |
 
 For bad extractions, report the exact key name in the issue.
 
@@ -76,6 +77,7 @@ For bad extractions, report the exact key name in the issue.
 ### If the file is absent
 
 Check `reference/Custom_Fields_Product_Filters.md` for the product's category (read from `product-features.md`):
+
 - If the category **is** listed in the reference file → the missing custom fields file is a **compliance** issue; flag it ❌
 - If the category is **not** listed → the absence is expected behavior (the custom fields STOP gate should have fired and the step was intentionally skipped); note it as expected and move on
 
@@ -128,19 +130,19 @@ Read the body copy section (everything before the `## SEO` heading, if present).
 
 First, classify the product as **simple** or **complex**:
 
-| Simple | Complex |
-|--------|---------|
-| Single-function accessories | Instruments |
-| Strings, picks, straps, bags | Multi-component systems |
+| Simple                        | Complex                            |
+| ----------------------------- | ---------------------------------- |
+| Single-function accessories   | Instruments                        |
+| Strings, picks, straps, bags  | Multi-component systems            |
 | Stands, clamps, mounts, cases | Electronics with multiple features |
-| Consumables | Amplifiers, interfaces, mixers |
+| Consumables                   | Amplifiers, interfaces, mixers     |
 
 Then check paragraph and section counts against the limit for the classification:
 
 | Product type | Max paragraphs | Max h2 sections |
-|---|---|---|
-| Simple | 3 | 3 |
-| Complex | 6 | 5 |
+| ------------ | -------------- | --------------- |
+| Simple       | 3              | 3               |
+| Complex      | 6              | 5               |
 
 Flag if either limit is exceeded, naming the product type used for the classification.
 
@@ -157,14 +159,14 @@ If no `## SEO` heading is found in `product-description.md`, mark Step 5 as not 
 
 If the heading is present, run these checks. Each is a pass/fail with the specific value reported:
 
-| Check | Pass condition | How to verify |
-|---|---|---|
-| Product Name / H1 | Present | Look for a line labeled "Product Name" or "H1" |
-| Title tag | Present and ≤ 60 characters | Count characters exactly; report the count |
-| Meta description | Present and ≤ 160 characters | Count characters exactly; report the count |
-| On-site search keywords | Present as a list | Look for a keywords section |
-| Keyword audit table | Present with Keyword / Confidence / Status columns | Check column headers |
-| Copy changes section | Present | Documents what body copy edits were made and why |
+| Check                   | Pass condition                                     | How to verify                                    |
+| ----------------------- | -------------------------------------------------- | ------------------------------------------------ |
+| Product Name / H1       | Present                                            | Look for a line labeled "Product Name" or "H1"   |
+| Title tag               | Present and ≤ 60 characters                        | Count characters exactly; report the count       |
+| Meta description        | Present and ≤ 160 characters                       | Count characters exactly; report the count       |
+| On-site search keywords | Present as a list                                  | Look for a keywords section                      |
+| Keyword audit table     | Present with Keyword / Confidence / Status columns | Check column headers                             |
+| Copy changes section    | Present                                            | Documents what body copy edits were made and why |
 
 For the title tag and meta description, always report the actual character count even when passing — this lets the reviewer spot values close to the limit.
 
@@ -177,10 +179,12 @@ If no `## Image Alt Text` heading is found in `product-description.md`, mark Ste
 If the heading is present:
 
 **Coverage — ❌ if failing:**
+
 - Every file in `images/` must have a corresponding row in the alt text table
 - List any image file that has no alt text entry by filename
 
 **Quality — ⚠️ if failing:**
+
 - Each alt text entry should be at least 80 characters — flag any entry shorter than this
 - Each entry should describe: what the subject is, the angle or view, any visible branding, and the background — flag entries that omit more than one of these elements
 
@@ -190,11 +194,11 @@ If the heading is present:
 
 Every issue reported must be tagged with exactly one label:
 
-| Label | Meaning | Publishing impact |
-|---|---|---|
-| **Compliance** | Prohibited content is present, or required content format was violated | Must fix before publishing |
-| **Data gap** | Information is missing or unconfirmed — not a model error, needs external lookup | Verify before publishing |
-| **Content quality** | Copy or structure doesn't meet guidelines — may be acceptable depending on context | Review before publishing |
+| Label               | Meaning                                                                            | Publishing impact          |
+| ------------------- | ---------------------------------------------------------------------------------- | -------------------------- |
+| **Compliance**      | Prohibited content is present, or required content format was violated             | Must fix before publishing |
+| **Data gap**        | Information is missing or unconfirmed — not a model error, needs external lookup   | Verify before publishing   |
+| **Content quality** | Copy or structure doesn't meet guidelines — may be acceptable depending on context | Review before publishing   |
 
 ---
 
@@ -262,12 +266,12 @@ After `product-review.md` is written, end the session with:
 
 ## Edge Cases
 
-| Situation | Action |
-|---|---|
-| Build not started (no files in SKU folder) | Report the folder as empty, note all steps are pending, and stop — nothing to review |
-| Only `product-features.md` present | Review Step 1 only; note all remaining steps as not started |
-| `product-bc-custom-fields.md` absent but category not in reference file | Note as expected behavior — not an error |
-| Images folder exists but is empty | Flag as a Step 3 compliance issue — folder present but no images downloaded |
-| `product-description.md` has SEO block but no alt text table | Steps 4–5 complete, Step 6 not started |
-| Extra files in SKU root (not in runbook spec) | List in Build Status section; classify as compliance if they are non-markdown binary files or frontend code; note as minor if they are informational markdown |
-| Product is a bundle or kit | For copy length classification, treat as complex |
+| Situation                                                               | Action                                                                                                                                                        |
+| ----------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Build not started (no files in SKU folder)                              | Report the folder as empty, note all steps are pending, and stop — nothing to review                                                                          |
+| Only `product-features.md` present                                      | Review Step 1 only; note all remaining steps as not started                                                                                                   |
+| `product-bc-custom-fields.md` absent but category not in reference file | Note as expected behavior — not an error                                                                                                                      |
+| Images folder exists but is empty                                       | Flag as a Step 3 compliance issue — folder present but no images downloaded                                                                                   |
+| `product-description.md` has SEO block but no alt text table            | Steps 4–5 complete, Step 6 not started                                                                                                                        |
+| Extra files in SKU root (not in runbook spec)                           | List in Build Status section; classify as compliance if they are non-markdown binary files or frontend code; note as minor if they are informational markdown |
+| Product is a bundle or kit                                              | For copy length classification, treat as complex                                                                                                              |

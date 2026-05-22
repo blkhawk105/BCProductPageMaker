@@ -3,18 +3,21 @@
 Final-pass SEO optimization for product display pages. Runs after `skills/product-copy.md` and `skills/product-specs.md`. Does not generate content from scratch — it audits, researches, recommends, applies, and reports.
 
 ## Dependencies
+
 Read before acting:
+
 - `registry/user-preferences.md` (always — store name required for title tags and meta descriptions)
 - `skills/module-guidelines.md` (universal rules)
 
 ---
 
 ## Required Inputs
+
 - **Product copy** — read from `output/[Brand]/[Model]/[SKU]/product-description.md` (written by product-copy)
 - **Spec table + features** — read from `output/[Brand]/[Model]/[SKU]/product-features.md` (written by product-specs)
 - **Brand + Model + SKU** — for keyword research targeting
 - **Store name** — from `registry/user-preferences.md` (`store_name`)
-- **Current product name** *(optional)* — from CRM/POS, for comparison
+- **Current product name** _(optional)_ — from CRM/POS, for comparison
 
 If either disk file is missing, stop and tell the user which skill needs to run first. If store name is blank in user-preferences.md, ask for it before proceeding.
 
@@ -25,11 +28,13 @@ If either disk file is missing, stop and tell the user which skill needs to run 
 Research what players and shoppers actually search for around this product.
 
 ### Method
+
 - Use web search as the primary source for keyword data — searches current trends and surfaces terms with real volume
 - If web search returns nothing useful (new product, very niche category), fall back to knowledge-based research using product category, manufacturer, and use case
 - Focus on **buyer-intent keywords** — terms someone uses when they're close to a purchase decision, not general educational queries
 
 ### What to look for
+
 - The product model name in various formats (with and without hyphens, common misspellings, abbreviated versions)
 - Category terms searchers use ("tenor saxophone," "Bb tenor sax," "pro tenor sax")
 - Use-case terms ("bebop saxophone," "vintage-style tenor," "jazz tenor sax")
@@ -37,7 +42,9 @@ Research what players and shoppers actually search for around this product.
 - Brand + category combinations ("Eastman saxophone," "Eastman tenor")
 
 ### Output
+
 Produce a ranked list of 5–10 candidate keywords with confidence levels:
+
 - **High** — appears in multiple search contexts, clear buyer intent
 - **Medium** — relevant but lower volume or more general
 - **Low** — niche or speculative, worth including in on-site search but not prioritizing in copy
@@ -49,6 +56,7 @@ Produce a ranked list of 5–10 candidate keywords with confidence levels:
 Compare the keyword research against the copy and spec table in the two input files.
 
 For each high and medium confidence keyword, note:
+
 - ✅ Present — appears naturally in the copy
 - ⚠️ Underrepresented — appears once or only in a non-prominent position
 - ❌ Missing — not present anywhere in the copy
@@ -86,9 +94,11 @@ NO CHANGE (could not fit naturally):
 The product name is the page H1 and carries the most SEO weight of any element on the page. It should be accurate, scannable, and front-loaded with the terms shoppers actually search for.
 
 ### Formula
+
 **`[Brand] [Model/SKU] [Meaningful Description] - [Qualifiers]`**
 
 ### Rules
+
 - Lead with Brand, then Model or SKU (whichever is more recognizable to shoppers)
 - Meaningful Description: what the product actually is, in plain language ("Tenor Saxophone," "Guitar Strap," "Instrument Microphone")
 - Qualifiers: finish, size, color, key feature — only include what meaningfully differentiates this SKU. Use a dash to separate qualifiers.
@@ -98,6 +108,7 @@ The product name is the page H1 and carries the most SEO weight of any element o
 - Incorporate the primary high-confidence keyword naturally if the formula allows
 
 ### Examples
+
 - `Eastman ETS852 52nd Street Tenor Saxophone - Unlacquered`
 - `Shure BETA56A Supercardioid Swivel-Mount Instrument Microphone`
 - `Levy's 2-Inch Signature Tri-Glide Series Leather and Suede Guitar Strap - Red`
@@ -110,12 +121,14 @@ The recommended name is output in the SEO block for the user to review. The user
 ## Step 5 — Write Title Tag
 
 ### Formula
+
 `[Brand] [Model] [Key Differentiator] | [Store Name]`
 
 ### Rules
+
 - **Target: 50–60 characters** — Google displays ~60 before truncating
 - Lead with the most searchable terms — brand and model first, store name last
-- Include the store name from `registry/user-preferences.md` at the end, separated by ` | `
+- Include the store name from `registry/user-preferences.md` at the end, separated by `|`
 - If the combined title exceeds 60 characters, store it as-is and flag what Google will likely display:
   > ⚠️ Title tag is 68 characters. Google will likely display:
   > "Zildjian Z Custom Chroma 5A Gold Drumsticks | Ted Br..."
@@ -126,6 +139,7 @@ The recommended name is output in the SEO block for the user to review. The user
 ## Step 6 — Write Meta Description
 
 ### Rules
+
 - **Target: 150–160 characters**
 - Customer-facing — written to be read by a person in search results, not a crawler
 - Include the primary keyword naturally in the first sentence
@@ -135,7 +149,8 @@ The recommended name is output in the SEO block for the user to review. The user
 - Do not include price — it changes and the meta description is cached
 
 ### Example
-> *"The Eastman ETS852 is a professional Bb tenor saxophone with vintage-inspired tone, the DS mechanism, and two included necks. Shop the 52nd Street at Ted Brown Music Company."*
+
+> _"The Eastman ETS852 is a professional Bb tenor saxophone with vintage-inspired tone, the DS mechanism, and two included necks. Shop the 52nd Street at Ted Brown Music Company."_
 > (160 characters)
 
 ---
@@ -145,6 +160,7 @@ The recommended name is output in the SEO block for the user to review. The user
 Produce a comma-separated list for the CMS "Search Keywords" field.
 
 ### What to include
+
 - Model name variants (with/without hyphens, common abbreviations)
 - Category terms at multiple levels of specificity
 - Brand name alone and combined with category
@@ -152,6 +168,7 @@ Produce a comma-separated list for the CMS "Search Keywords" field.
 - Finish, color, or variant descriptors for this specific SKU
 
 ### What to exclude
+
 - Competitor brand names
 - Generic terms so broad they'd match everything ("saxophone," "instrument")
 - Misspellings — handled by search engine fuzzy matching
@@ -159,6 +176,7 @@ Produce a comma-separated list for the CMS "Search Keywords" field.
 **Length guidance:** 8–15 terms, no hard limit.
 
 **Format** (comma-separated, ready to paste into CMS):
+
 ```
 Eastman ETS852, 52nd Street tenor sax, professional tenor saxophone,
 unlacquered tenor saxophone, jazz tenor saxophone, Eastman tenor sax
@@ -180,21 +198,27 @@ SEO makes two writes to `product-description.md`:
 ## SEO — [YYYY-MM-DD]
 
 ### Copy Changes
+
 [diff summary from Step 3]
 
 ### Product Name (H1)
+
 [recommended name]
 
 ### Title Tag
+
 [title tag text — N characters]
 
 ### Meta Description
+
 [meta description text — N characters]
 
 ### On-Site Search Keywords
+
 [comma-separated list]
 
 ### Keyword Audit
+
 [which high/medium keywords are now present, which are still missing]
 ```
 
@@ -212,17 +236,17 @@ After appending the SEO block to `product-description.md`, end the session with:
 >
 > **Full build — Step 6 is next: product-alt-text**
 > End this session, then continue with:
-> *"Run product-alt-text for [Brand] [Model] [SKU]"*"
+> _"Run product-alt-text for [Brand] [Model] [SKU]"_"
 
 ---
 
 ## Edge Cases
 
-| Situation | Action |
-|-----------|--------|
-| No existing copy — `product-description.md` missing | Stop. Tell the user product-copy must run first. |
-| Product is new with no search data | Fall back to knowledge-based keyword research; flag lower confidence |
-| Store name not in preferences | Ask for it before proceeding; write it to `registry/user-preferences.md` |
-| Title tag cannot fit under 70 characters | Present best option with flag; do not truncate in a way that loses meaning |
-| Keyword fits but was flagged in spec conflict | Do not use the conflicting value — treat as unavailable |
-| Alt texts needed | Alt text is handled by `skills/product-alt-text.md` — run it after SEO |
+| Situation                                           | Action                                                                     |
+| --------------------------------------------------- | -------------------------------------------------------------------------- |
+| No existing copy — `product-description.md` missing | Stop. Tell the user product-copy must run first.                           |
+| Product is new with no search data                  | Fall back to knowledge-based keyword research; flag lower confidence       |
+| Store name not in preferences                       | Ask for it before proceeding; write it to `registry/user-preferences.md`   |
+| Title tag cannot fit under 70 characters            | Present best option with flag; do not truncate in a way that loses meaning |
+| Keyword fits but was flagged in spec conflict       | Do not use the conflicting value — treat as unavailable                    |
+| Alt texts needed                                    | Alt text is handled by `skills/product-alt-text.md` — run it after SEO     |

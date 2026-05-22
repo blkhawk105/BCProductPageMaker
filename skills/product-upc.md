@@ -5,16 +5,19 @@
 Looks up and verifies UPC codes for music products. Must be invoked on its own by explicit user request. Does not depend on specs or copy output.
 
 ## Dependencies
+
 Read before acting:
+
 - `registry/user-preferences.md` (always)
 - `skills/module-guidelines.md` (universal rules)
 
 ---
 
 ## Required Inputs
+
 - **Brand**: Manufacturer name
 - **Model**: Product model name/number
-- **SKU / Variant** *(recommended)*: Specific finish, color, or configuration — UPCs are variant-specific
+- **SKU / Variant** _(recommended)_: Specific finish, color, or configuration — UPCs are variant-specific
 
 ---
 
@@ -72,7 +75,9 @@ After `product-upc.md` is written, end the session with:
 ```
 UPC: [value] — confirmed via [source]
 ```
+
 or
+
 ```
 UPC: not confirmed — [N] source(s) checked. Recommend requesting from vendor.
 ```

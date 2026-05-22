@@ -16,20 +16,20 @@ Parked domains and JavaScript-rendered pages look valid to a fetch tool but fail
 
 ## Task → Skill Mapping
 
-| User Request | Load Skill | Also Read |
-|-------------|-----------|-----------|
-| "get specs for X" | `skills/product-specs.md` | `registry/brand-registry.md` |
-| "get UPC for X" | `skills/product-upc.md` | *(none)* |
-| "find images for X" | `skills/product-image-search.md` | `registry/brand-registry.md`, `registry/aimm-members.md` |
-| "write copy for X" | `skills/product-copy.md` | `registry/brand-registry.md` |
-| "custom fields for X" | `skills/product-custom-fields.md` | `reference/Custom_Fields_Product_Filters.md` |
-| "SEO for X" | `skills/seo.md` | *(none — seo reads from disk files)* |
-| "write alt text for X" | `skills/product-alt-text.md` | *(none)* |
-| "build full page for X" | Run skills in sequence (see Full Build below) | As needed per skill |
-| "review output for X" | `skills/product-review.md` | *(reads all output files in SKU folder)* |
-| "add a brand" | Edit `registry/brand-registry.md` directly | *(none)* |
-| "update AIMM stores" | Edit `registry/aimm-members.md` directly | *(none)* |
-| "update my preferences" | Edit `registry/user-preferences.md` directly | *(none)* |
+| User Request            | Load Skill                                    | Also Read                                                |
+| ----------------------- | --------------------------------------------- | -------------------------------------------------------- |
+| "get specs for X"       | `skills/product-specs.md`                     | `registry/brand-registry.md`                             |
+| "get UPC for X"         | `skills/product-upc.md`                       | _(none)_                                                 |
+| "find images for X"     | `skills/product-image-search.md`              | `registry/brand-registry.md`, `registry/aimm-members.md` |
+| "write copy for X"      | `skills/product-copy.md`                      | `registry/brand-registry.md`                             |
+| "custom fields for X"   | `skills/product-custom-fields.md`             | `reference/Custom_Fields_Product_Filters.md`             |
+| "SEO for X"             | `skills/seo.md`                               | _(none — seo reads from disk files)_                     |
+| "write alt text for X"  | `skills/product-alt-text.md`                  | _(none)_                                                 |
+| "build full page for X" | Run skills in sequence (see Full Build below) | As needed per skill                                      |
+| "review output for X"   | `skills/product-review.md`                    | _(reads all output files in SKU folder)_                 |
+| "add a brand"           | Edit `registry/brand-registry.md` directly    | _(none)_                                                 |
+| "update AIMM stores"    | Edit `registry/aimm-members.md` directly      | _(none)_                                                 |
+| "update my preferences" | Edit `registry/user-preferences.md` directly  | _(none)_                                                 |
 
 Every skill reads `skills/module-guidelines.md` on startup — it loads `registry/user-preferences.md` and defines universal source rules, excluded retailers, and discontinued product handling. This is not listed in the Also Read column because it is implicit for all skills.
 
@@ -84,22 +84,22 @@ Step 6:   product-alt-text
 Each step ends with a Signal Complete message that names the next step and gives an exact resume phrase. After the session ends:
 
 1. Start a new session
-2. Say the resume phrase from the Signal Complete message — e.g., *"Run product-custom-fields for Ernie Ball P02218 Standard"*
+2. Say the resume phrase from the Signal Complete message — e.g., _"Run product-custom-fields for Ernie Ball P02218 Standard"_
 3. The runbook maps that phrase to the correct skill; the skill reads all its inputs from disk
 
 **You never need to re-explain the product.** The Brand, Model, and SKU are enough — all spec and copy data lives in the output folder.
 
 If you are resuming a build and are unsure which step is next, check what files exist in `output/[Brand]/[Model]/[SKU]/`:
 
-| Files present | Next step |
-|---------------|-----------|
-| *(nothing)* | Step 1 — product-specs |
-| `product-features.md` only | Step 2 — product-custom-fields |
-| `product-bc-custom-fields.md` | Step 3 — product-image-search |
-| `images/` folder | Step 4 — product-copy |
-| `product-description.md` (no SEO block) | Step 5 — seo |
-| `product-description.md` (has `## SEO` block) | Step 6 — product-alt-text |
-| All files + alt text table | Build complete |
+| Files present                                 | Next step                      |
+| --------------------------------------------- | ------------------------------ |
+| _(nothing)_                                   | Step 1 — product-specs         |
+| `product-features.md` only                    | Step 2 — product-custom-fields |
+| `product-bc-custom-fields.md`                 | Step 3 — product-image-search  |
+| `images/` folder                              | Step 4 — product-copy          |
+| `product-description.md` (no SEO block)       | Step 5 — seo                   |
+| `product-description.md` (has `## SEO` block) | Step 6 — product-alt-text      |
+| All files + alt text table                    | Build complete                 |
 
 ---
 
@@ -115,13 +115,13 @@ Trigger phrase: the user must say something like "get the UPC," "look up the UPC
 
 These gates occur within the skill step that triggers them and pause the build sequence there. Do not continue to the next step while a gate is open — wait for the user's response before proceeding.
 
-| Gate | Triggered by | Behavior |
-|------|-------------|----------|
-| Preferences check | Any skill (first run) | Ask for store name, include-own-store, units. Skip if `registry/user-preferences.md` is already populated. |
-| Simple product prompt | product-specs (Step 1) | Ask whether to build a full spec list. Always search for shipping dimensions regardless of the answer. |
-| Category confirmation | product-custom-fields (Step 2) | If category is inferred, not provided — confirm before proceeding. |
-| Image selection | product-image-search (Step 3) | Present image table; ask which images to download. |
-| Discontinued product | Any skill | If discontinuation is confirmed, report it and ask whether to continue before proceeding with that step. |
+| Gate                  | Triggered by                   | Behavior                                                                                                   |
+| --------------------- | ------------------------------ | ---------------------------------------------------------------------------------------------------------- |
+| Preferences check     | Any skill (first run)          | Ask for store name, include-own-store, units. Skip if `registry/user-preferences.md` is already populated. |
+| Simple product prompt | product-specs (Step 1)         | Ask whether to build a full spec list. Always search for shipping dimensions regardless of the answer.     |
+| Category confirmation | product-custom-fields (Step 2) | If category is inferred, not provided — confirm before proceeding.                                         |
+| Image selection       | product-image-search (Step 3)  | Present image table; ask which images to download.                                                         |
+| Discontinued product  | Any skill                      | If discontinuation is confirmed, report it and ask whether to continue before proceeding with that step.   |
 
 ---
 
@@ -135,14 +135,14 @@ All skill outputs save automatically to `output/[Brand]/[Model]/[SKU]/`. No path
 
 **If no SKU is specified**, use `Standard` as the SKU-level folder (e.g., `output/Yamaha/YAS-26/Standard/`). Apply this consistently across all skills in the same build.
 
-| File / Folder | Written by | Notes |
-|---------------|-----------|-------|
-| `images/` | product-image-search | Downloaded images go here |
-| `product-description.md` | product-copy → seo → product-alt-text | copy writes it; SEO updates body copy in place and appends title/meta block; alt-text appends image table |
-| `product-features.md` | product-specs | Spec table + feature bullets |
-| `product-bc-custom-fields.md` | product-custom-fields | Ready to paste into BigCommerce |
-| `product-upc.md` | product-upc | Written only on explicit user request — never automatic |
-| `product-review.md` | product-review | Informational only; does not feed any build step |
+| File / Folder                 | Written by                            | Notes                                                                                                     |
+| ----------------------------- | ------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| `images/`                     | product-image-search                  | Downloaded images go here                                                                                 |
+| `product-description.md`      | product-copy → seo → product-alt-text | copy writes it; SEO updates body copy in place and appends title/meta block; alt-text appends image table |
+| `product-features.md`         | product-specs                         | Spec table + feature bullets                                                                              |
+| `product-bc-custom-fields.md` | product-custom-fields                 | Ready to paste into BigCommerce                                                                           |
+| `product-upc.md`              | product-upc                           | Written only on explicit user request — never automatic                                                   |
+| `product-review.md`           | product-review                        | Informational only; does not feed any build step                                                          |
 
 ---
 
