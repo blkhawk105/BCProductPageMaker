@@ -24,6 +24,7 @@
 
 import fs from 'fs';
 import path from 'path';
+import readline from 'readline';
 import { parse } from 'csv-parse/sync';
 import { stringify } from 'csv-stringify/sync';
 
@@ -142,6 +143,17 @@ async function askModel(messages) {
 		: (data.message?.content?.trim() ?? '');
 }
 
+// --- Interactive prompt ---
+function prompt(question) {
+	const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+	return new Promise((resolve) => {
+		rl.question(question, (answer) => {
+			rl.close();
+			resolve(answer);
+		});
+	});
+}
+
 // --- Progress sidecar ---
 function loadProgress() {
 	if (RESUME && fs.existsSync(progressPath)) {
@@ -180,6 +192,37 @@ const imageItems = importRows.filter((r) => r.Item === 'Image');
 const total = imageItems.length;
 console.log(`Found ${total} Image rows. Model: ${MODEL}${RESUME ? ' (resume mode)' : ''}\n`);
 
+// Pre-flight: check all images exist on disk before starting
+const missingFiles = imageItems
+	.map((item) => {
+		const id = item.ID?.trim();
+		const filename = filenameById.get(id);
+		if (!filename) return null;
+		const filePath = path.join(imagesDir, filename);
+		return fs.existsSync(filePath) ? null : { id, filename };
+	})
+	.filter(Boolean);
+
+if (missingFiles.length > 0) {
+	console.warn(`Warning: ${missingFiles.length} image(s) not found in ${imagesDir}:`);
+	for (const { id, filename } of missingFiles) {
+		console.warn(`  ID=${id}  ${filename}`);
+	}
+	const answer = await prompt('\nContinue anyway? (y/N) ');
+	if (answer.trim().toLowerCase() !== 'y') {
+		const save = await prompt('Save a CSV of missing images? (y/N) ');
+		if (save.trim().toLowerCase() === 'y') {
+			const reportPath = outputCsv.replace(/\.csv$/i, '.missing.csv');
+			const reportContent = stringify(missingFiles, { header: true, columns: ['id', 'filename'] });
+			fs.writeFileSync(reportPath, reportContent, 'utf8');
+			console.log(`Missing images report saved → ${reportPath}`);
+		}
+		console.log('Aborted.');
+		process.exit(0);
+	}
+	console.log('');
+}
+
 const completed = loadProgress();
 if (RESUME) {
 	console.log(`Resuming — ${completed.size} already done.\n`);
@@ -196,6 +239,7 @@ const systemMessage = { role: 'system', content: SYSTEM_PROMPT };
 let messages = [systemMessage];
 let sessionCount = 0;
 let processed = 0;
+const failures = [];
 
 for (let i = 0; i < imageItems.length; i++) {
 	const item = imageItems[i];
@@ -233,35 +277,47 @@ for (let i = 0; i < imageItems.length; i++) {
 	const userMessage = buildUserMessage(base64, filename);
 
 	let altText;
+	let failed = false;
 	try {
 		altText = await askModel([...messages, userMessage]);
 	} catch (err) {
-		altText = `[error: ${err.message}]`;
-		console.error(`  Error: ${err.message}`);
+		failed = true;
+		const name = rowById.get(id)?.Name ?? '';
+		failures.push({ ID: id, Name: name, filename, error: err.message });
+		console.error(`  Error: ${err.message}\n`);
 	}
 
-	console.log(`  → ${altText}\n`);
-
-	// Write result into the row and accumulate history
-	const row = rowById.get(id);
-	if (row) row['Image Description'] = altText;
-
-	messages.push(userMessage, { role: 'assistant', content: altText });
-	sessionCount++;
-	processed++;
-
-	completed.add(id);
-	saveProgress(completed);
+	if (!failed) {
+		console.log(`  → ${altText}\n`);
+		const row = rowById.get(id);
+		if (row) row['Image Description'] = altText;
+		messages.push(userMessage, { role: 'assistant', content: altText });
+		sessionCount++;
+		processed++;
+		completed.add(id);
+		saveProgress(completed);
+	}
 }
 
 // Write updated CSV preserving all rows and original column order
 const outputCsvContent = stringify(importRows, { header: true, columns: headers });
 fs.writeFileSync(outputCsv, outputCsvContent, 'utf8');
 
-const errors = imageItems.filter((r) => String(r['Image Description']).startsWith('[error:'));
-
 console.log(`\nDone! ${processed} processed → ${outputCsv}`);
-if (errors.length) {
-	console.log(`\nErrors (${errors.length}):`);
-	errors.forEach((r) => console.log(`  ID=${r.ID}  ${r['Image Description']}`));
+
+if (failures.length > 0) {
+	console.log(`\nFailed (${failures.length}):`);
+	for (const f of failures) {
+		console.log(`  ID=${f.ID}  ${f.filename}  — ${f.error}`);
+	}
+	const save = await prompt('\nSave a failure report CSV? (y/N) ');
+	if (save.trim().toLowerCase() === 'y') {
+		const reportPath = outputCsv.replace(/\.csv$/i, '.failures.csv');
+		const reportContent = stringify(failures, {
+			header: true,
+			columns: ['ID', 'Name', 'filename', 'error']
+		});
+		fs.writeFileSync(reportPath, reportContent, 'utf8');
+		console.log(`Failure report saved → ${reportPath}`);
+	}
 }

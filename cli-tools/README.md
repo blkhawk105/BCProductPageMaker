@@ -101,9 +101,15 @@ node cli-tools/generateAltText.mjs images.csv import.csv ./images/ output.csv --
 node cli-tools/generateAltText.mjs images.csv import.csv ./images/ import.csv
 ```
 
+Before processing starts, the script checks that every image in the manifest exists on disk. If any are missing it lists them and asks whether to continue. If you choose not to continue, you are given the option to save a `<output>.missing.csv` report of the missing files. This catches pointing at the wrong images directory before wasting any GPU time.
+
 Images are processed one at a time. Chat history accumulates for up to 10 images then resets, keeping the context window small while maintaining stylistic consistency within each batch.
 
-A progress sidecar is written after each image. Run with `--resume` to pick up after a crash; omit it to regenerate all alt text from scratch.
+A progress sidecar is written after each successful image. Run with `--resume` to pick up after a crash; omit it to regenerate all alt text from scratch. Failed images are **not** marked done in the sidecar, so they will be retried automatically on `--resume`.
+
+If any images fail (e.g. the backend dropped mid-run), a summary is printed at the end with the ID, filename, and error for each failure. You are then asked whether to save a `<output>.failures.csv` report — useful for tracking down which products need a second pass.
+
+Errors are never written into the `Image Description` column — the output CSV is always import-safe.
 
 Requires Ollama running locally (`ollama serve`) with a vision-capable model pulled (e.g. `ollama pull llava`), or LM Studio with its local server enabled.
 
