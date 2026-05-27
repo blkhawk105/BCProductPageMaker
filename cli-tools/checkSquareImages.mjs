@@ -15,35 +15,16 @@
 import fs from 'fs';
 import https from 'https';
 import http from 'http';
+import { fileURLToPath } from 'url';
 import { parse } from 'csv-parse/sync';
 import { stringify } from 'csv-stringify/sync';
 import imageSize from 'image-size';
+import { normalizeBcCdnUrl, processWithConcurrency } from './utils.mjs';
 
-// --- CLI args ---
-const args = process.argv.slice(2);
-const workerFlag = args.indexOf('--workers');
-const CONCURRENCY = workerFlag !== -1 ? parseInt(args[workerFlag + 1], 10) : 10;
-const positional = args.filter(
-	(a) => !a.startsWith('--') && args[args.indexOf(a) - 1] !== '--workers'
-);
-const [inputPath, outputPath] = positional;
-
-if (!inputPath || !outputPath) {
-	console.error('Usage: node checkSquareImages.mjs <input.csv> <output.csv> [--workers N]');
-	process.exit(1);
-}
-
-// --- Swap the BigCommerce CDN size variant in the filename to the largest available (1280x1280).
-//     BC/Akamai pre-generates fixed size tiers; this store has .386.513 (thumbnail) and
-//     .1280.1280 (zoom). Anything larger 404s.
-//     e.g. filename.1777446497.386.513.jpg?c=1  →  filename.1777446497.1280.1280.jpg?c=1
-function normalizeBcCdnUrl(url) {
-	if (!url.includes('bigcommerce.com')) return url;
-	return url.replace(/\.\d+\.\d+(\.(?:jpe?g|png|gif|webp))(\?.*)?$/i, '.1280.1280$1$2');
-}
+export { normalizeBcCdnUrl };
 
 // --- Fetch image bytes (streaming, stops early once dimensions are detected) ---
-function fetchImageBytes(url, redirectCount = 0) {
+export function fetchImageBytes(url, redirectCount = 0) {
 	return new Promise((resolve, reject) => {
 		if (redirectCount > 5) return reject(new Error('Too many redirects'));
 
@@ -98,7 +79,7 @@ function fetchImageBytes(url, redirectCount = 0) {
 }
 
 // --- Check a single row ---
-async function checkSquare(row) {
+export async function checkSquare(row) {
 	const url = (row.URL || '').trim();
 	if (!url) {
 		return { ...row, isSquare: 'error: no URL', imageType: '', width: '', height: '' };
@@ -129,48 +110,42 @@ async function checkSquare(row) {
 	}
 }
 
-// --- Concurrency pool ---
-async function processWithConcurrency(items, fn, concurrency) {
-	const results = Array.from({ length: items.length });
-	let next = 0;
-	let completed = 0;
+// --- Main ---
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+	const args = process.argv.slice(2);
+	const workerFlag = args.indexOf('--workers');
+	const CONCURRENCY = workerFlag !== -1 ? parseInt(args[workerFlag + 1], 10) : 10;
+	const positional = args.filter(
+		(a) => !a.startsWith('--') && args[args.indexOf(a) - 1] !== '--workers'
+	);
+	const [inputPath, outputPath] = positional;
 
-	async function worker() {
-		while (next < items.length) {
-			const i = next++;
-			results[i] = await fn(items[i]);
-			completed++;
-			if (completed % 50 === 0 || completed === items.length) {
-				process.stdout.write(`  ${completed}/${items.length} done\n`);
-			}
-		}
+	if (!inputPath || !outputPath) {
+		console.error('Usage: node checkSquareImages.mjs <input.csv> <output.csv> [--workers N]');
+		process.exit(1);
 	}
 
-	await Promise.all(Array.from({ length: concurrency }, worker));
-	return results;
-}
+	const inputRaw = fs.readFileSync(inputPath, 'utf8');
+	const rows = parse(inputRaw, { columns: true, skip_empty_lines: true });
 
-// --- Main ---
-const inputRaw = fs.readFileSync(inputPath, 'utf8');
-const rows = parse(inputRaw, { columns: true, skip_empty_lines: true });
+	const headers = Object.keys(rows[0]);
+	if (!headers.includes('isSquare')) headers.push('isSquare');
+	if (!headers.includes('imageType')) headers.push('imageType');
+	if (!headers.includes('width')) headers.push('width');
+	if (!headers.includes('height')) headers.push('height');
 
-const headers = Object.keys(rows[0]);
-if (!headers.includes('isSquare')) headers.push('isSquare');
-if (!headers.includes('imageType')) headers.push('imageType');
-if (!headers.includes('width')) headers.push('width');
-if (!headers.includes('height')) headers.push('height');
+	console.log(`Processing ${rows.length} rows with ${CONCURRENCY} workers...`);
 
-console.log(`Processing ${rows.length} rows with ${CONCURRENCY} workers...`);
+	const results = await processWithConcurrency(rows, checkSquare, CONCURRENCY);
 
-const results = await processWithConcurrency(rows, checkSquare, CONCURRENCY);
+	const output = stringify(results, { header: true, columns: headers });
+	fs.writeFileSync(outputPath, output, 'utf8');
 
-const output = stringify(results, { header: true, columns: headers });
-fs.writeFileSync(outputPath, output, 'utf8');
-
-const errors = results.filter((r) => String(r.isSquare).startsWith('error'));
-console.log(`\nDone! Output written to: ${outputPath}`);
-console.log(`  Total: ${results.length} | Errors: ${errors.length}`);
-if (errors.length) {
-	console.log('\nRows with errors:');
-	errors.forEach((r) => console.log(`  ID=${r.ID ?? '?'}  ${r.isSquare}`));
+	const errors = results.filter((r) => String(r.isSquare).startsWith('error'));
+	console.log(`\nDone! Output written to: ${outputPath}`);
+	console.log(`  Total: ${results.length} | Errors: ${errors.length}`);
+	if (errors.length) {
+		console.log('\nRows with errors:');
+		errors.forEach((r) => console.log(`  ID=${r.ID ?? '?'}  ${r.isSquare}`));
+	}
 }
