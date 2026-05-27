@@ -55,6 +55,60 @@ Fetches only enough bytes to detect dimensions — aborts the stream early once 
 
 ---
 
+### `generateAltText.mjs`
+
+Generates alt text for downloaded product images using a local Ollama or LM Studio vision model, writing results into the `Image Description` column of a BC import CSV.
+
+```
+node cli-tools/generateAltText.mjs <images.csv> <import.csv> <images-dir/> <output.csv> [flags]
+```
+
+**Positional arguments:**
+
+| Argument      | Description                                                                        |
+| ------------- | ---------------------------------------------------------------------------------- |
+| `images.csv`  | Download manifest from `prepareImageExport.mjs` (`ID`, `URL`, `export_image_name`) |
+| `import.csv`  | BC product export/import CSV — must include an `Image Description` column          |
+| `images-dir/` | Directory containing the downloaded image files                                    |
+| `output.csv`  | Destination for the updated BC import CSV (can be the same file as `import.csv`)   |
+
+**Flags:**
+
+| Flag                | Description                                                                                                             |
+| ------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| `--model <name>`    | Vision model name (default: `llava`)                                                                                    |
+| `--resume`          | Skip image IDs already recorded in the progress sidecar — use this to pick up after a crash                             |
+| `--progress <file>` | Path to the progress sidecar (default: `<output.csv>.progress.json`) — useful when the output path changed between runs |
+| `--lm-studio`       | Use LM Studio's OpenAI-compatible API instead of Ollama                                                                 |
+| `--host <url>`      | Override the backend host (default: `http://localhost:11434` for Ollama, `http://localhost:1234` for LM Studio)         |
+
+**Common invocations:**
+
+```sh
+# Local Ollama (default)
+node cli-tools/generateAltText.mjs images.csv import.csv ./images/ output.csv
+
+# Local LM Studio
+node cli-tools/generateAltText.mjs images.csv import.csv ./images/ output.csv --lm-studio
+
+# LM Studio on another machine
+node cli-tools/generateAltText.mjs images.csv import.csv ./images/ output.csv --lm-studio --host http://192.168.0.208:1234
+
+# Resume a crashed run, pointing to an existing sidecar
+node cli-tools/generateAltText.mjs images.csv import.csv ./images/ output.csv --resume --progress /path/to/old.progress.json
+
+# Write results back into the same file used as input
+node cli-tools/generateAltText.mjs images.csv import.csv ./images/ import.csv
+```
+
+Images are processed one at a time. Chat history accumulates for up to 10 images then resets, keeping the context window small while maintaining stylistic consistency within each batch.
+
+A progress sidecar is written after each image. Run with `--resume` to pick up after a crash; omit it to regenerate all alt text from scratch.
+
+Requires Ollama running locally (`ollama serve`) with a vision-capable model pulled (e.g. `ollama pull llava`), or LM Studio with its local server enabled.
+
+---
+
 ## Typical workflow
 
 ```sh
@@ -66,7 +120,10 @@ node cli-tools/prepareImageExport.mjs export.csv export-named.csv
 # 3. Download all images
 node cli-tools/downloadImages.mjs export-named.csv ./images/
 
-# 4. Optionally verify images are square before uploading
+# 4. Generate alt text and write into BC import CSV
+node cli-tools/generateAltText.mjs export-named.csv export.csv ./images/ import-with-alt.csv
+
+# 5. Optionally verify images are square before uploading
 node cli-tools/checkSquareImages.mjs export-named.csv export-checked.csv
 ```
 
