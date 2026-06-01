@@ -1,8 +1,16 @@
 #!/usr/bin/env node
 /**
  * Check if images at URLs are square, and detect their type.
- * Reads a CSV with columns: ID, URL, isSquare (and optionally imageType)
- * Fills in the isSquare and imageType columns and writes output CSV.
+ *
+ * Supports two input formats (auto-detected by column names):
+ *
+ * BC export mode — full BigCommerce product export CSV:
+ *   Checks "Variant Image URL" and "Internal Image URL (Export)" columns.
+ *   Output columns: productId, productSku, productName, imageId, sourceColumn,
+ *                   URL, isSquare, imageType, width, height
+ *
+ * Legacy mode — simple CSV with ID and URL columns:
+ *   Output columns: (original columns) + isSquare, imageType, width, height
  *
  * Usage:
  *   node checkSquareImages.mjs input.csv output.csv
@@ -110,6 +118,39 @@ export async function checkSquare(row) {
 	}
 }
 
+const BC_URL_COLUMNS = ['Variant Image URL', 'Internal Image URL (Export)'];
+
+// Flatten a BC export into one check-item per non-empty URL.
+// Tracks the current product context (ID/SKU/Name) from Product rows so that
+// Image rows — which carry the actual URLs but no product identifiers — can be
+// annotated with their parent product.
+export function flattenBcRows(rows) {
+	const items = [];
+	let currentProduct = { ID: '', SKU: '', Name: '' };
+
+	for (const row of rows) {
+		if (row.Item === 'Product') {
+			currentProduct = { ID: row.ID, SKU: row.SKU, Name: row.Name };
+		}
+
+		for (const col of BC_URL_COLUMNS) {
+			const url = (row[col] || '').trim();
+			if (url) {
+				items.push({
+					productId: currentProduct.ID,
+					productSku: currentProduct.SKU,
+					productName: currentProduct.Name,
+					imageId: row.ID,
+					sourceColumn: col,
+					URL: url
+				});
+			}
+		}
+	}
+
+	return items;
+}
+
 // --- Main ---
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
 	const args = process.argv.slice(2);
@@ -128,24 +169,72 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
 	const inputRaw = fs.readFileSync(inputPath, 'utf8');
 	const rows = parse(inputRaw, { columns: true, skip_empty_lines: true });
 
-	const headers = Object.keys(rows[0]);
-	if (!headers.includes('isSquare')) headers.push('isSquare');
-	if (!headers.includes('imageType')) headers.push('imageType');
-	if (!headers.includes('width')) headers.push('width');
-	if (!headers.includes('height')) headers.push('height');
+	const firstRowKeys = Object.keys(rows[0]);
+	const isBcExport = BC_URL_COLUMNS.some((col) => firstRowKeys.includes(col));
 
-	console.log(`Processing ${rows.length} rows with ${CONCURRENCY} workers...`);
+	let checkItems;
+	let headers;
 
-	const results = await processWithConcurrency(rows, checkSquare, CONCURRENCY);
+	if (isBcExport) {
+		console.log('Detected BigCommerce export format.');
+		checkItems = flattenBcRows(rows);
+		headers = [
+			'productId',
+			'productSku',
+			'productName',
+			'imageId',
+			'sourceColumn',
+			'URL',
+			'isSquare',
+			'imageType',
+			'width',
+			'height'
+		];
+	} else {
+		checkItems = rows;
+		headers = [...firstRowKeys];
+		if (!headers.includes('isSquare')) headers.push('isSquare');
+		if (!headers.includes('imageType')) headers.push('imageType');
+		if (!headers.includes('width')) headers.push('width');
+		if (!headers.includes('height')) headers.push('height');
+	}
+
+	console.log(`Processing ${checkItems.length} URLs with ${CONCURRENCY} workers...`);
+
+	const results = await processWithConcurrency(checkItems, checkSquare, CONCURRENCY);
 
 	const output = stringify(results, { header: true, columns: headers });
 	fs.writeFileSync(outputPath, output, 'utf8');
 
 	const errors = results.filter((r) => String(r.isSquare).startsWith('error'));
+	const notSquare = results.filter((r) => r.isSquare === 'FALSE');
+
 	console.log(`\nDone! Output written to: ${outputPath}`);
-	console.log(`  Total: ${results.length} | Errors: ${errors.length}`);
+	console.log(
+		`  Total: ${results.length} | Not square: ${notSquare.length} | Errors: ${errors.length}`
+	);
+
+	if (isBcExport) {
+		const byColumn = {};
+		for (const r of results) {
+			byColumn[r.sourceColumn] ??= { total: 0, notSquare: 0, errors: 0 };
+			byColumn[r.sourceColumn].total++;
+			if (r.isSquare === 'FALSE') byColumn[r.sourceColumn].notSquare++;
+			if (String(r.isSquare).startsWith('error')) byColumn[r.sourceColumn].errors++;
+		}
+		console.log('\nBy column:');
+		for (const [col, stats] of Object.entries(byColumn)) {
+			console.log(
+				`  "${col}": ${stats.total} checked, ${stats.notSquare} not square, ${stats.errors} errors`
+			);
+		}
+	}
+
 	if (errors.length) {
 		console.log('\nRows with errors:');
-		errors.forEach((r) => console.log(`  ID=${r.ID ?? '?'}  ${r.isSquare}`));
+		errors.forEach((r) => {
+			const id = r.imageId ?? r.ID ?? '?';
+			console.log(`  imageId=${id}  ${r.isSquare}`);
+		});
 	}
 }
