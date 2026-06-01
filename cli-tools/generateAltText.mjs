@@ -10,7 +10,7 @@
  *   node generateAltText.mjs <images.csv> <import.csv> <images-dir/> <output.csv> --lm-studio
  *   node generateAltText.mjs <images.csv> <import.csv> <images-dir/> <output.csv> --lm-studio --host http://192.168.1.50:1234
  *
- * images.csv  — download manifest: ID, URL, export_image_name
+ * images.csv  — BC check report from checkSquareImages.mjs (BC export mode)
  * import.csv  — BC product export/import CSV (must include "Image Description" column)
  * images-dir  — directory containing downloaded image files
  * output.csv  — destination for the updated BC import CSV
@@ -27,6 +27,7 @@ import path from 'path';
 import readline from 'readline';
 import { parse } from 'csv-parse/sync';
 import { stringify } from 'csv-stringify/sync';
+import { buildExportImageName } from './utils.mjs';
 
 const DEFAULT_OLLAMA_HOST = 'http://localhost:11434';
 const DEFAULT_LM_STUDIO_HOST = 'http://localhost:1234';
@@ -173,12 +174,12 @@ function saveProgress(completed) {
 // --- Main ---
 await checkBackend();
 
-// Build ID → export_image_name map from download manifest
+// Build imageId → filename map from BC check report
 const imageRows = parse(fs.readFileSync(imagesCsv, 'utf8'), {
 	columns: true,
 	skip_empty_lines: true
 });
-const filenameById = new Map(imageRows.map((r) => [r.ID.trim(), r.export_image_name.trim()]));
+const filenameById = new Map(imageRows.map((r) => [r.imageId.trim(), buildExportImageName(r)]));
 
 // Parse import CSV, preserving column order
 const importRows = parse(fs.readFileSync(importCsv, 'utf8'), {

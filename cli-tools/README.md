@@ -52,12 +52,12 @@ node cli-tools/generateAltText.mjs <images.csv> <import.csv> <images-dir/> <outp
 
 **Positional arguments:**
 
-| Argument      | Description                                                                                                |
-| ------------- | ---------------------------------------------------------------------------------------------------------- |
-| `images.csv`  | Download manifest with `ID`, `URL`, `export_image_name` columns (pending update to accept BC check format) |
-| `import.csv`  | BC product export/import CSV — must include an `Image Description` column                                  |
-| `images-dir/` | Directory containing the downloaded image files                                                            |
-| `output.csv`  | Destination for the updated BC import CSV (can be the same file as `import.csv`)                           |
+| Argument      | Description                                                                      |
+| ------------- | -------------------------------------------------------------------------------- |
+| `images.csv`  | BC check report from `checkSquareImages.mjs` (BC export mode)                    |
+| `import.csv`  | BC product export/import CSV — must include an `Image Description` column        |
+| `images-dir/` | Directory containing the downloaded image files                                  |
+| `output.csv`  | Destination for the updated BC import CSV (can be the same file as `import.csv`) |
 
 **Flags:**
 
@@ -114,8 +114,7 @@ node cli-tools/checkSquareImages.mjs export.csv export-checked.csv
 node cli-tools/downloadImages.mjs export-checked.csv ./images/
 
 # 4. Generate alt text and write into BC import CSV
-#    Note: generateAltText.mjs still expects the old ID/export_image_name format — update pending
-node cli-tools/generateAltText.mjs export-named.csv export.csv ./images/ import-with-alt.csv
+node cli-tools/generateAltText.mjs export-checked.csv export.csv ./images/ import-with-alt.csv
 ```
 
 ## Shared utilities (`utils.mjs`)
