@@ -174,11 +174,12 @@ function saveProgress(completed) {
 // --- Main ---
 await checkBackend();
 
-// Build imageId → filename map from BC check report
+// Build imageId → row and imageId → filename maps from BC check report
 const imageRows = parse(fs.readFileSync(imagesCsv, 'utf8'), {
 	columns: true,
 	skip_empty_lines: true
 });
+const imageRowById = new Map(imageRows.map((r) => [r.imageId.trim(), r]));
 const filenameById = new Map(imageRows.map((r) => [r.imageId.trim(), buildExportImageName(r)]));
 
 // Parse import CSV, preserving column order
@@ -283,8 +284,9 @@ for (let i = 0; i < imageItems.length; i++) {
 		altText = await askModel([...messages, userMessage]);
 	} catch (err) {
 		failed = true;
+		const imageRow = imageRowById.get(id) ?? {};
 		const name = rowById.get(id)?.Name ?? '';
-		failures.push({ ID: id, Name: name, filename, error: err.message });
+		failures.push({ ...imageRow, Name: name, filename, error: err.message });
 		console.error(`  Error: ${err.message}\n`);
 	}
 
@@ -309,16 +311,18 @@ console.log(`\nDone! ${processed} processed → ${outputCsv}`);
 if (failures.length > 0) {
 	console.log(`\nFailed (${failures.length}):`);
 	for (const f of failures) {
-		console.log(`  ID=${f.ID}  ${f.filename}  — ${f.error}`);
+		console.log(`  imageId=${f.imageId}  ${f.filename}  — ${f.error}`);
 	}
+	console.log('\nTip: re-run with --resume to retry failed images automatically.');
 	const save = await prompt('\nSave a failure report CSV? (y/N) ');
 	if (save.trim().toLowerCase() === 'y') {
 		const reportPath = outputCsv.replace(/\.csv$/i, '.failures.csv');
-		const reportContent = stringify(failures, {
-			header: true,
-			columns: ['ID', 'Name', 'filename', 'error']
-		});
+		// Write all check report columns so the file can be passed directly as images.csv on retry
+		const checkReportColumns = Object.keys(imageRows[0] ?? {});
+		const failureColumns = [...checkReportColumns, 'Name', 'filename', 'error'];
+		const reportContent = stringify(failures, { header: true, columns: failureColumns });
 		fs.writeFileSync(reportPath, reportContent, 'utf8');
 		console.log(`Failure report saved → ${reportPath}`);
+		console.log('Pass it as images.csv to retry just the failed images.');
 	}
 }
