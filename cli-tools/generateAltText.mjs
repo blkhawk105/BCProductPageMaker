@@ -33,6 +33,18 @@ const DEFAULT_OLLAMA_HOST = 'http://localhost:11434';
 const DEFAULT_LM_STUDIO_HOST = 'http://localhost:1234';
 const SESSION_SIZE = 10;
 
+// Priming exchange injected at the start of every session to lock Qwen (and similar models)
+// into English before the first image is sent. Without this, Qwen resets to Chinese on
+// every new session regardless of system prompt or per-message instructions.
+const SESSION_PRIMER = [
+	{ role: 'user', content: 'What language will you use for all your responses?' },
+	{
+		role: 'assistant',
+		content:
+			'English only. I will write all alt text in English regardless of any text, characters, or language visible in the images.'
+	}
+];
+
 const SYSTEM_PROMPT = `You are a product image analyst writing alt text for a musical instrument retailer's website.
 
 For each image you receive, write a single line of alt text following these rules:
@@ -124,12 +136,20 @@ function buildUserMessage(base64, filename) {
 		return {
 			role: 'user',
 			content: [
-				{ type: 'text', text: 'Write alt text for this product image.' },
+				{ type: 'text', text: 'Write alt text for this product image. Respond in English only.' },
 				{ type: 'image_url', image_url: { url: `data:${mimeType(filename)};base64,${base64}` } }
 			]
 		};
 	}
-	return { role: 'user', content: 'Write alt text for this product image.', images: [base64] };
+	return {
+		role: 'user',
+		content: 'Write alt text for this product image. Respond in English only.',
+		images: [base64]
+	};
+}
+
+function containsCjk(text) {
+	return /[　-鿿豈-﫿]/.test(text);
 }
 
 async function askModel(messages) {
@@ -244,7 +264,7 @@ async function runBatch(items) {
 	let batchAlreadyDone = 0;
 	const batchTotal = items.length;
 	const systemMessage = { role: 'system', content: SYSTEM_PROMPT };
-	let batchMessages = [systemMessage];
+	let batchMessages = [systemMessage, ...SESSION_PRIMER];
 	let sessionCount = 0;
 	let batchProcessed = 0;
 
@@ -262,7 +282,7 @@ async function runBatch(items) {
 			const bStart = i + 1;
 			const bEnd = Math.min(i + SESSION_SIZE, batchTotal);
 			console.log(`\n--- New session (images ${bStart}–${bEnd}) ---\n`);
-			batchMessages = [systemMessage];
+			batchMessages = [systemMessage, ...SESSION_PRIMER];
 		}
 
 		const filename = filenameById.get(id);
@@ -283,6 +303,18 @@ async function runBatch(items) {
 		let failed = false;
 		try {
 			altText = await askModel([...batchMessages, userMessage]);
+			if (containsCjk(altText)) {
+				altText = await askModel([
+					...batchMessages,
+					userMessage,
+					{ role: 'assistant', content: altText },
+					{
+						role: 'user',
+						content:
+							'Your response contained non-English characters. Rewrite it in English only, keeping all product names and model numbers exactly as they appear.'
+					}
+				]);
+			}
 		} catch (err) {
 			failed = true;
 			const imageRow = imageRowById.get(id) ?? {};
