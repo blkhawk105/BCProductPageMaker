@@ -17,27 +17,9 @@ import fs from 'fs';
 import { fileURLToPath } from 'url';
 import { parse } from 'csv-parse/sync';
 import { stringify } from 'csv-stringify/sync';
+import { toKebab, parseVariantValues, extFromUrl } from './utils.mjs';
 
-export function toKebab(str) {
-	return str
-		.toLowerCase()
-		.replace(/[^a-z0-9]+/g, '-')
-		.replace(/^-+|-+$/g, '');
-}
-
-// Options format: "Type=Dropdown|Name=Color|Value=Natural|Type=Dropdown|Name=Neck|Value=Maple"
-export function parseVariantValues(options) {
-	return (options || '')
-		.split('|')
-		.filter((p) => p.startsWith('Value='))
-		.map((p) => p.slice(6).trim().toLowerCase());
-}
-
-export function extFromUrl(url) {
-	const match = url.split('?')[0].match(/\.(jpe?g|png|gif|webp)$/i);
-	if (!match) return '.jpg';
-	return match[0].toLowerCase() === '.jpeg' ? '.jpg' : match[0].toLowerCase();
-}
+export { toKebab, parseVariantValues, extFromUrl };
 
 // Transform a parsed BC export into download-ready rows.
 export function buildImageRows(rows) {

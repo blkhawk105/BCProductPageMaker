@@ -16,9 +16,9 @@ import https from 'https';
 import http from 'http';
 import { fileURLToPath } from 'url';
 import { parse } from 'csv-parse/sync';
-import { normalizeBcCdnUrl, processWithConcurrency } from './utils.mjs';
+import { normalizeBcCdnUrl, processWithConcurrency, buildExportImageName } from './utils.mjs';
 
-export { normalizeBcCdnUrl };
+export { normalizeBcCdnUrl, buildExportImageName };
 
 // --- Download a URL to a file path ---
 export function downloadToFile(url, dest, redirectCount = 0) {
@@ -53,10 +53,15 @@ export function downloadToFile(url, dest, redirectCount = 0) {
 }
 
 // --- Process a single row ---
+// Accepts either legacy format (ID, URL, export_image_name) or BC check format
+// (productId, productSku, productName, imageId, sourceColumn, options, URL).
 export async function downloadRow(row, outputDir) {
-	const id = (row.ID || '').trim();
+	const isBcCheckFormat = 'productName' in row && 'sourceColumn' in row;
+	const id = isBcCheckFormat ? (row.imageId || '').trim() : (row.ID || '').trim();
 	const url = (row.URL || '').trim();
-	const exportName = (row.export_image_name || '').trim();
+	const exportName = isBcCheckFormat
+		? buildExportImageName(row)
+		: (row.export_image_name || '').trim();
 
 	if (!url) return { id, status: 'error: no URL', dest: '' };
 	if (!id) return { id: '(no ID)', status: 'error: no ID', dest: '' };

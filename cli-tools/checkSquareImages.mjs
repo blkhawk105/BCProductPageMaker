@@ -142,6 +142,7 @@ export function flattenBcRows(rows) {
 					productName: currentProduct.Name,
 					imageId: row.ID,
 					sourceColumn: col,
+					options: row.Options || '',
 					URL: url
 				});
 			}
@@ -184,6 +185,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
 			'productName',
 			'imageId',
 			'sourceColumn',
+			'options',
 			'URL',
 			'isSquare',
 			'imageType',
