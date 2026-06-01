@@ -4,54 +4,41 @@ Standalone Node utilities for working with BigCommerce product images. These scr
 
 ## Scripts
 
-### `prepareImageExport.mjs`
-
-Reads a BigCommerce product export CSV and outputs a download-ready CSV with human-readable filenames.
-
-```
-node cli-tools/prepareImageExport.mjs <input.csv> <output.csv>
-```
-
-**Input columns:** `Item`, `ID`, `Name`, `SKU`, `Options`, `Variant Image URL`, `Internal Image URL (Export)`
-
-**Output columns:** `ID`, `URL`, `export_image_name`
-
-Naming convention:
-
-- **Variant images** — `{kebab-product-name}_{value1}_{value2}.{ext}` (all option values joined by `_`)
-- **Internal images** — `{kebab-product-name}_{imageID}.{ext}`
-
-Feed the output into `downloadImages.mjs`.
-
----
-
-### `downloadImages.mjs`
-
-Downloads images from a CSV, saving each file under its `export_image_name`.
-
-```
-node cli-tools/downloadImages.mjs <input.csv> <output-dir/> [--workers N]
-```
-
-**Input columns:** `ID`, `URL`, `export_image_name`
-
-BigCommerce CDN URLs are automatically normalized to the largest available size tier (1280×1280) before downloading. Default concurrency: 5 workers.
-
----
-
 ### `checkSquareImages.mjs`
 
-Checks whether images at a list of URLs are square, and records their dimensions and type.
+Checks whether images are square and records their dimensions. Accepts a full BigCommerce product export CSV directly — auto-detects the format by column name.
 
 ```
 node cli-tools/checkSquareImages.mjs <input.csv> <output.csv> [--workers N]
 ```
 
-**Input columns:** `ID`, `URL`
+**BC export mode** (auto-detected when `Variant Image URL` or `Internal Image URL (Export)` columns are present):
 
-**Output columns:** adds `isSquare` (`TRUE`/`FALSE`/`error: ...`), `imageType`, `width`, `height`
+**Input:** BigCommerce product export CSV  
+**Output columns:** `productId`, `productSku`, `productName`, `imageId`, `sourceColumn`, `options`, `URL`, `isSquare`, `imageType`, `width`, `height`
 
 Fetches only enough bytes to detect dimensions — aborts the stream early once width and height are known. Default concurrency: 10 workers.
+
+Feed the output directly into `downloadImages.mjs`.
+
+---
+
+### `downloadImages.mjs`
+
+Downloads images from a `checkSquareImages.mjs` BC report, deriving filenames from product name and variant options.
+
+```
+node cli-tools/downloadImages.mjs <input.csv> <output-dir/> [--workers N]
+```
+
+**Input:** output of `checkSquareImages.mjs` (BC export mode)
+
+Naming convention:
+
+- **Variant images** — `{kebab-product-name}_{value1}_{value2}.{ext}`
+- **Internal images** — `{kebab-product-name}_{imageId}.{ext}`
+
+BigCommerce CDN URLs are automatically normalized to the largest available size tier (1280×1280) before downloading. Default concurrency: 5 workers.
 
 ---
 
@@ -65,12 +52,12 @@ node cli-tools/generateAltText.mjs <images.csv> <import.csv> <images-dir/> <outp
 
 **Positional arguments:**
 
-| Argument      | Description                                                                        |
-| ------------- | ---------------------------------------------------------------------------------- |
-| `images.csv`  | Download manifest from `prepareImageExport.mjs` (`ID`, `URL`, `export_image_name`) |
-| `import.csv`  | BC product export/import CSV — must include an `Image Description` column          |
-| `images-dir/` | Directory containing the downloaded image files                                    |
-| `output.csv`  | Destination for the updated BC import CSV (can be the same file as `import.csv`)   |
+| Argument      | Description                                                                                                |
+| ------------- | ---------------------------------------------------------------------------------------------------------- |
+| `images.csv`  | Download manifest with `ID`, `URL`, `export_image_name` columns (pending update to accept BC check format) |
+| `import.csv`  | BC product export/import CSV — must include an `Image Description` column                                  |
+| `images-dir/` | Directory containing the downloaded image files                                                            |
+| `output.csv`  | Destination for the updated BC import CSV (can be the same file as `import.csv`)                           |
 
 **Flags:**
 
@@ -120,17 +107,15 @@ Requires Ollama running locally (`ollama serve`) with a vision-capable model pul
 ```sh
 # 1. Export products from BigCommerce admin as CSV
 
-# 2. Generate the download manifest
-node cli-tools/prepareImageExport.mjs export.csv export-named.csv
+# 2. Check which images are square (also produces the download manifest)
+node cli-tools/checkSquareImages.mjs export.csv export-checked.csv
 
-# 3. Download all images
-node cli-tools/downloadImages.mjs export-named.csv ./images/
+# 3. Download images (feed the full check report, or filter to isSquare=FALSE rows first)
+node cli-tools/downloadImages.mjs export-checked.csv ./images/
 
 # 4. Generate alt text and write into BC import CSV
+#    Note: generateAltText.mjs still expects the old ID/export_image_name format — update pending
 node cli-tools/generateAltText.mjs export-named.csv export.csv ./images/ import-with-alt.csv
-
-# 5. Optionally verify images are square before uploading
-node cli-tools/checkSquareImages.mjs export-named.csv export-checked.csv
 ```
 
 ## Shared utilities (`utils.mjs`)
@@ -141,6 +126,10 @@ Internal module imported by the scripts above — not meant to be called directl
 | -------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
 | `normalizeBcCdnUrl(url)`                                       | Swaps the BC CDN size segment to `.1280.1280` (largest pre-generated tier)          |
 | `processWithConcurrency(items, fn, concurrency, reportEvery?)` | Runs `fn` over `items` with a capped concurrency pool, reporting progress to stdout |
+| `toKebab(str)`                                                 | Converts a string to kebab-case                                                     |
+| `parseVariantValues(options)`                                  | Extracts `Value=…` segments from a BC Options string                                |
+| `extFromUrl(url)`                                              | Extracts the file extension from a URL                                              |
+| `buildExportImageName(row)`                                    | Builds a download filename from a BC check report row                               |
 
 ## Tests
 

@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 /**
- * Download max-resolution images from a CSV list.
- * Reads a CSV with columns: ID, URL, export_image_name
+ * Download max-resolution images from a BC check report CSV.
+ * Reads the output of checkSquareImages.mjs (BC export mode).
  * Normalizes BigCommerce CDN URLs to the largest available tier (1280x1280).
- * Saves each image as <output-dir>/<export_image_name>
+ * Saves each image as <output-dir>/<kebab-product-name>_{variant-values|imageId}.{ext}
  *
  * Usage:
  *   node downloadImages.mjs input.csv output-dir/
@@ -53,19 +53,14 @@ export function downloadToFile(url, dest, redirectCount = 0) {
 }
 
 // --- Process a single row ---
-// Accepts either legacy format (ID, URL, export_image_name) or BC check format
-// (productId, productSku, productName, imageId, sourceColumn, options, URL).
 export async function downloadRow(row, outputDir) {
-	const isBcCheckFormat = 'productName' in row && 'sourceColumn' in row;
-	const id = isBcCheckFormat ? (row.imageId || '').trim() : (row.ID || '').trim();
+	const id = (row.imageId || '').trim();
 	const url = (row.URL || '').trim();
-	const exportName = isBcCheckFormat
-		? buildExportImageName(row)
-		: (row.export_image_name || '').trim();
+	const exportName = buildExportImageName(row);
 
 	if (!url) return { id, status: 'error: no URL', dest: '' };
 	if (!id) return { id: '(no ID)', status: 'error: no ID', dest: '' };
-	if (!exportName) return { id, status: 'error: no export_image_name', dest: '' };
+	if (!exportName) return { id, status: 'error: no filename', dest: '' };
 
 	const fetchUrl = normalizeBcCdnUrl(url);
 	const dest = path.join(outputDir, exportName);
