@@ -1,5 +1,12 @@
 import { describe, it, expect } from 'vite-plus/test';
-import { normalizeBcCdnUrl, processWithConcurrency } from './utils.mjs';
+import {
+	normalizeBcCdnUrl,
+	processWithConcurrency,
+	toKebab,
+	parseVariantValues,
+	extFromUrl,
+	buildExportImageName
+} from './utils.mjs';
 
 describe('normalizeBcCdnUrl', () => {
 	it('leaves non-BC URLs unchanged', () => {
@@ -93,5 +100,129 @@ describe('processWithConcurrency', () => {
 			1
 		);
 		expect(order).toEqual([1, 2, 3]);
+	});
+});
+
+describe('toKebab', () => {
+	it('lowercases and hyphenates words', () => {
+		expect(toKebab('My Product Name')).toBe('my-product-name');
+	});
+
+	it('replaces special characters with hyphens', () => {
+		expect(toKebab('Guitar & Bass')).toBe('guitar-bass');
+	});
+
+	it('collapses multiple separators into one hyphen', () => {
+		expect(toKebab('foo  --  bar')).toBe('foo-bar');
+	});
+
+	it('trims leading and trailing hyphens', () => {
+		expect(toKebab('  Leading/Trailing  ')).toBe('leading-trailing');
+	});
+
+	it('handles empty string', () => {
+		expect(toKebab('')).toBe('');
+	});
+
+	it('handles all-uppercase input', () => {
+		expect(toKebab('UPPERCASE')).toBe('uppercase');
+	});
+});
+
+describe('parseVariantValues', () => {
+	it('returns empty array for empty string', () => {
+		expect(parseVariantValues('')).toEqual([]);
+	});
+
+	it('extracts a single value', () => {
+		expect(parseVariantValues('Type=Dropdown|Name=Color|Value=Natural')).toEqual(['natural']);
+	});
+
+	it('extracts multiple values', () => {
+		expect(
+			parseVariantValues(
+				'Type=Dropdown|Name=Color|Value=Natural|Type=Dropdown|Name=Neck|Value=Maple'
+			)
+		).toEqual(['natural', 'maple']);
+	});
+
+	it('returns empty array when no Value= segments exist', () => {
+		expect(parseVariantValues('Type=Dropdown|Name=Color')).toEqual([]);
+	});
+
+	it('lowercases values', () => {
+		expect(parseVariantValues('Value=5A')).toEqual(['5a']);
+	});
+});
+
+describe('extFromUrl', () => {
+	it('extracts .jpg extension', () => {
+		expect(extFromUrl('https://example.com/photo.jpg')).toBe('.jpg');
+	});
+
+	it('normalizes .jpeg to .jpg', () => {
+		expect(extFromUrl('https://example.com/photo.jpeg')).toBe('.jpg');
+	});
+
+	it('lowercases the extension', () => {
+		expect(extFromUrl('https://example.com/photo.PNG')).toBe('.png');
+	});
+
+	it('strips the query string before matching', () => {
+		expect(extFromUrl('https://example.com/photo.webp?c=1')).toBe('.webp');
+	});
+
+	it('defaults to .jpg when no extension is found', () => {
+		expect(extFromUrl('https://example.com/photo')).toBe('.jpg');
+	});
+
+	it('defaults to .jpg for empty string', () => {
+		expect(extFromUrl('')).toBe('.jpg');
+	});
+});
+
+describe('buildExportImageName', () => {
+	it('builds an internal image filename from product name and imageId', () => {
+		const row = {
+			productName: 'My Guitar',
+			imageId: '200',
+			sourceColumn: 'Internal Image URL (Export)',
+			options: '',
+			URL: 'https://example.com/photo.jpg'
+		};
+		expect(buildExportImageName(row)).toBe('my-guitar_200.jpg');
+	});
+
+	it('builds a variant filename with option values', () => {
+		const row = {
+			productName: 'Drum Sticks',
+			imageId: '300',
+			sourceColumn: 'Variant Image URL',
+			options: 'Type=Dropdown|Name=Color|Value=Natural|Type=Dropdown|Name=Size|Value=5A',
+			URL: 'https://example.com/photo.jpg'
+		};
+		expect(buildExportImageName(row)).toBe('drum-sticks_natural_5a.jpg');
+	});
+
+	it('builds a variant filename with no option values (no suffix)', () => {
+		const row = {
+			productName: 'Snare',
+			imageId: '400',
+			sourceColumn: 'Variant Image URL',
+			options: '',
+			URL: 'https://example.com/photo.jpg'
+		};
+		expect(buildExportImageName(row)).toBe('snare.jpg');
+	});
+
+	it('uses the URL extension', () => {
+		const row = {
+			productName: 'Drum',
+			imageId: '500',
+			sourceColumn: 'Internal Image URL (Export)',
+			options: '',
+			URL: 'https://example.com/photo.png'
+		};
+		expect(buildExportImageName(row)).toBe('drum_500.png');
 	});
 });
