@@ -92,9 +92,13 @@ Before processing starts, the script checks that every image in the manifest exi
 
 Images are processed one at a time. Chat history accumulates for up to 10 images then resets, keeping the context window small while maintaining stylistic consistency within each batch.
 
-A progress sidecar is written after each successful image. Run with `--resume` to pick up after a crash; omit it to regenerate all alt text from scratch. Failed images are **not** marked done in the sidecar, so they are retried automatically when you re-run with `--resume` — no manual intervention needed for transient errors.
+A progress sidecar is written after each successful image. Run with `--resume` to pick up after a crash; omit it to regenerate all alt text from scratch.
 
-If you need to retry failures from an old run without the original sidecar, save the failure report CSV when prompted — it includes all check report columns and can be passed directly as the `images.csv` argument to run just those images.
+**Automatic retry:** if any images fail, the script immediately retries them once without prompting. If failures persist after the auto-retry, you are offered three options:
+
+- **(r) Retry** — attempt the remaining failures one more time (3 total attempts). If they still fail, the script alerts you and suggests fixing the issue before re-running with `--resume`.
+- **(s) Save failure report** — writes a CSV containing all check report columns so it can be passed directly as `images.csv` on a future run targeting just those images.
+- **(Enter) Skip** — exit without saving.
 
 If any images fail (e.g. the backend dropped mid-run), a summary is printed at the end with the ID, filename, and error for each failure. You are then asked whether to save a `<output>.failures.csv` report — useful for tracking down which products need a second pass.
 

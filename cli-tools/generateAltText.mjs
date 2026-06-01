@@ -38,11 +38,13 @@ const SYSTEM_PROMPT = `You are a product image analyst writing alt text for a mu
 For each image you receive, write a single line of alt text following these rules:
 - Describe what is actually visible — do not describe what you expect based on a product name
 - Include: brand name, model name/number, key visual details (angle, finish, background, any notable visible feature)
-- Target length: 100–175 characters
+- Output must be under 175 characters total
 - Do not start with "Image of", "Photo of", or "Picture of" — begin with the subject directly
 - Do not use marketing language (stunning, beautiful, premium)
 - For lifestyle shots: describe the product in its context, not just the context
 - For detail shots: name the specific part or feature shown
+
+Always respond in English, even when product names, brand names, or model numbers are in another language — include those terms as-is but write the surrounding description in English.
 
 Reply with ONLY the alt text — no explanation, no quotes, no punctuation beyond what the alt text itself needs.`;
 
@@ -229,100 +231,168 @@ const completed = loadProgress();
 if (RESUME) {
 	console.log(`Resuming — ${completed.size} already done.\n`);
 } else {
-	// Fresh run: reset sidecar
 	saveProgress(new Set());
 }
 
 // Build a lookup from ID to the mutable row object so we can write results in place
 const rowById = new Map(importRows.map((r) => [r.ID?.trim(), r]));
 
-// Process images one at a time
-const systemMessage = { role: 'system', content: SYSTEM_PROMPT };
-let messages = [systemMessage];
-let sessionCount = 0;
-let processed = 0;
-const failures = [];
+// --- Process a list of image items, returning failures ---
+async function runBatch(items) {
+	const batchFailures = [];
+	const batchSkipped = [];
+	let batchAlreadyDone = 0;
+	const batchTotal = items.length;
+	const systemMessage = { role: 'system', content: SYSTEM_PROMPT };
+	let batchMessages = [systemMessage];
+	let sessionCount = 0;
+	let batchProcessed = 0;
 
-for (let i = 0; i < imageItems.length; i++) {
-	const item = imageItems[i];
-	const id = item.ID?.trim();
-	const displayIndex = `[${i + 1}/${total}]`;
+	for (let i = 0; i < items.length; i++) {
+		const item = items[i];
+		const id = item.ID?.trim();
+		const displayIndex = `[${i + 1}/${batchTotal}]`;
 
-	if (RESUME && completed.has(id)) {
-		console.log(`${displayIndex} Skipping ${id} (already done)`);
-		continue;
+		if (RESUME && completed.has(id)) {
+			batchAlreadyDone++;
+			continue;
+		}
+
+		if (sessionCount > 0 && sessionCount % SESSION_SIZE === 0) {
+			const bStart = i + 1;
+			const bEnd = Math.min(i + SESSION_SIZE, batchTotal);
+			console.log(`\n--- New session (images ${bStart}–${bEnd}) ---\n`);
+			batchMessages = [systemMessage];
+		}
+
+		const filename = filenameById.get(id);
+		if (!filename) continue;
+
+		const filePath = path.join(imagesDir, filename);
+		if (!fs.existsSync(filePath)) {
+			batchSkipped.push({ ...imageRowById.get(id), filename });
+			continue;
+		}
+
+		const base64 = fs.readFileSync(filePath).toString('base64');
+		console.log(`${displayIndex} ${filename}`);
+
+		const userMessage = buildUserMessage(base64, filename);
+
+		let altText;
+		let failed = false;
+		try {
+			altText = await askModel([...batchMessages, userMessage]);
+		} catch (err) {
+			failed = true;
+			const imageRow = imageRowById.get(id) ?? {};
+			const name = rowById.get(id)?.Name ?? '';
+			batchFailures.push({ ...imageRow, Name: name, filename, error: err.message });
+			console.error(`  Error: ${err.message}\n`);
+		}
+
+		if (!failed) {
+			console.log(`  → ${altText}\n`);
+			const row = rowById.get(id);
+			if (row) row['Image Description'] = altText;
+			batchMessages.push(userMessage, { role: 'assistant', content: altText });
+			sessionCount++;
+			batchProcessed++;
+			completed.add(id);
+			saveProgress(completed);
+		}
 	}
 
-	// Session boundary
-	if (sessionCount > 0 && sessionCount % SESSION_SIZE === 0) {
-		const batchStart = i + 1;
-		const batchEnd = Math.min(i + SESSION_SIZE, total);
-		console.log(`\n--- New session (images ${batchStart}–${batchEnd}) ---\n`);
-		messages = [systemMessage];
-	}
-
-	const filename = filenameById.get(id);
-	if (!filename) {
-		console.warn(`${displayIndex} ID ${id} not found in images CSV — skipping`);
-		continue;
-	}
-
-	const filePath = path.join(imagesDir, filename);
-	if (!fs.existsSync(filePath)) {
-		console.warn(`${displayIndex} File not found: ${filePath} — skipping`);
-		continue;
-	}
-
-	const base64 = fs.readFileSync(filePath).toString('base64');
-	console.log(`${displayIndex} ${filename}`);
-
-	const userMessage = buildUserMessage(base64, filename);
-
-	let altText;
-	let failed = false;
-	try {
-		altText = await askModel([...messages, userMessage]);
-	} catch (err) {
-		failed = true;
-		const imageRow = imageRowById.get(id) ?? {};
-		const name = rowById.get(id)?.Name ?? '';
-		failures.push({ ...imageRow, Name: name, filename, error: err.message });
-		console.error(`  Error: ${err.message}\n`);
-	}
-
-	if (!failed) {
-		console.log(`  → ${altText}\n`);
-		const row = rowById.get(id);
-		if (row) row['Image Description'] = altText;
-		messages.push(userMessage, { role: 'assistant', content: altText });
-		sessionCount++;
-		processed++;
-		completed.add(id);
-		saveProgress(completed);
-	}
+	return { batchFailures, batchProcessed, batchSkipped, batchAlreadyDone };
 }
 
-// Write updated CSV preserving all rows and original column order
-const outputCsvContent = stringify(importRows, { header: true, columns: headers });
-fs.writeFileSync(outputCsv, outputCsvContent, 'utf8');
+function retryItemsFor(failureList) {
+	const failedIds = new Set(failureList.map((f) => f.imageId?.trim()).filter(Boolean));
+	return imageItems.filter((item) => failedIds.has(item.ID?.trim()));
+}
+
+async function saveFailureReport(failureList) {
+	const reportPath = outputCsv.replace(/\.csv$/i, '.failures.csv');
+	const checkReportColumns = Object.keys(imageRows[0] ?? {});
+	const failureColumns = [...checkReportColumns, 'Name', 'filename', 'error'];
+	fs.writeFileSync(
+		reportPath,
+		stringify(failureList, { header: true, columns: failureColumns }),
+		'utf8'
+	);
+	console.log(`Failure report saved → ${reportPath}`);
+	console.log('Pass it as images.csv to retry just the failed images.');
+}
+
+// --- Main run ---
+let processed = 0;
+let {
+	batchFailures: failures,
+	batchProcessed: p1,
+	batchSkipped: skipped,
+	batchAlreadyDone: alreadyDone
+} = await runBatch(imageItems);
+processed += p1;
+
+// Auto-retry once
+if (failures.length > 0) {
+	console.log(`\n--- Auto-retrying ${failures.length} failed image(s) ---\n`);
+	const { batchFailures: r1Failures, batchProcessed: p2 } = await runBatch(retryItemsFor(failures));
+	processed += p2;
+	failures = r1Failures;
+}
+
+// Write output CSV (captures everything processed so far)
+fs.writeFileSync(outputCsv, stringify(importRows, { header: true, columns: headers }), 'utf8');
 
 console.log(`\nDone! ${processed} processed → ${outputCsv}`);
+if (alreadyDone > 0) console.log(`  ${alreadyDone} skipped (already completed)`);
+if (skipped.length > 0) console.log(`  ${skipped.length} skipped (file not found on disk)`);
 
 if (failures.length > 0) {
-	console.log(`\nFailed (${failures.length}):`);
+	console.log(`\nStill failing after auto-retry (${failures.length}):`);
 	for (const f of failures) {
 		console.log(`  imageId=${f.imageId}  ${f.filename}  — ${f.error}`);
 	}
-	console.log('\nTip: re-run with --resume to retry failed images automatically.');
-	const save = await prompt('\nSave a failure report CSV? (y/N) ');
+
+	const answer = await prompt('\n(r) Retry  (s) Save failure report  (Enter) Skip: ');
+
+	if (answer.trim().toLowerCase() === 'r') {
+		console.log(`\n--- Retrying ${failures.length} image(s) ---\n`);
+		const { batchFailures: r2Failures, batchProcessed: p3 } = await runBatch(
+			retryItemsFor(failures)
+		);
+		failures = r2Failures;
+
+		fs.writeFileSync(outputCsv, stringify(importRows, { header: true, columns: headers }), 'utf8');
+
+		if (failures.length > 0) {
+			console.log(
+				`\n⚠ ${failures.length} image(s) are still failing after 3 attempts. Fix the underlying issue and re-run with --resume.`
+			);
+			const save = await prompt('\nSave failure report? (y/N) ');
+			if (save.trim().toLowerCase() === 'y') await saveFailureReport(failures);
+		} else {
+			console.log(`\nAll ${p3} retries succeeded.`);
+		}
+	} else if (answer.trim().toLowerCase() === 's') {
+		await saveFailureReport(failures);
+	}
+}
+
+if (skipped.length > 0) {
+	const save = await prompt(
+		`\nSave a report of ${skipped.length} skipped (missing) image(s)? (y/N) `
+	);
 	if (save.trim().toLowerCase() === 'y') {
-		const reportPath = outputCsv.replace(/\.csv$/i, '.failures.csv');
-		// Write all check report columns so the file can be passed directly as images.csv on retry
+		const reportPath = outputCsv.replace(/\.csv$/i, '.skipped.csv');
 		const checkReportColumns = Object.keys(imageRows[0] ?? {});
-		const failureColumns = [...checkReportColumns, 'Name', 'filename', 'error'];
-		const reportContent = stringify(failures, { header: true, columns: failureColumns });
-		fs.writeFileSync(reportPath, reportContent, 'utf8');
-		console.log(`Failure report saved → ${reportPath}`);
-		console.log('Pass it as images.csv to retry just the failed images.');
+		fs.writeFileSync(
+			reportPath,
+			stringify(skipped, { header: true, columns: [...checkReportColumns, 'filename'] }),
+			'utf8'
+		);
+		console.log(`Skipped report saved → ${reportPath}`);
+		console.log('Download the missing files then pass it as images.csv to re-run.');
 	}
 }
