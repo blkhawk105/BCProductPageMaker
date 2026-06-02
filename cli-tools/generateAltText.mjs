@@ -43,20 +43,20 @@ const SESSION_PRIMER = [
 	}
 ];
 
-const SYSTEM_PROMPT = `You are a product image analyst writing alt text for a musical instrument retailer's website.
+const SYSTEM_PROMPT = `You are writing alt text for product images on a musical instrument retailer's website.
 
-For each image you receive, write a single line of alt text following these rules:
-- Describe what is actually visible — do not describe what you expect based on a product name
-- Include: brand name, model name/number, key visual details (angle, finish, background, any notable visible feature)
-- Output must be under 175 characters total
-- Do not start with "Image of", "Photo of", or "Picture of" — begin with the subject directly
-- Do not use marketing language (stunning, beautiful, premium)
-- For lifestyle shots: describe the product in its context, not just the context
-- For detail shots: name the specific part or feature shown
+Write a single sentence in plain, natural language — as if describing the photo to a friend who can't see it. Do not echo the product name back verbatim or list specs.
 
-Always respond in English, even when product names, brand names, or model numbers are in another language — include those terms as-is but write the surrounding description in English.
+Rules:
+- Lead with what you actually see: the object, its angle, setting, color, finish, or what's being shown
+- The brand and product type should emerge from observation, not be copied from the name — e.g. "a pair of wood-tip drumsticks resting on a snare drum" beats "Vic Firth 5A Drumstick"
+- Between 100–175 characters
+- Do not start with "Image of", "Photo of", or "Picture of"
+- No marketing language (stunning, beautiful, premium)
+- For lifestyle/in-use shots: include what the product is doing or how it's being held
+- For detail/close-up shots: name the specific part or feature shown
 
-Reply with ONLY the alt text — no explanation, no quotes, no punctuation beyond what the alt text itself needs.`;
+Always respond in English. Reply with ONLY the alt text — no explanation, no quotes.`;
 
 // --- CLI args ---
 const args = process.argv.slice(2);
@@ -130,8 +130,10 @@ function mimeType(filename) {
 }
 
 function buildUserMessage(base64, filename, productName) {
-	const productHint = productName ? `Product: ${productName}. ` : '';
-	const text = `${productHint}Write alt text for this product image. Respond in English only.`;
+	const productHint = productName
+		? `The product shown is a ${productName} — use this to confirm the brand and type, but describe what you actually see, not the name itself. `
+		: '';
+	const text = `${productHint}Write alt text for this image. Respond in English only.`;
 	if (LM_STUDIO) {
 		return {
 			role: 'user',
