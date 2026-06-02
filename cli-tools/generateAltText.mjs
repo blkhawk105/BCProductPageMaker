@@ -31,8 +31,6 @@ import { buildExportImageName } from './utils.mjs';
 
 const DEFAULT_OLLAMA_HOST = 'http://localhost:11434';
 const DEFAULT_LM_STUDIO_HOST = 'http://localhost:1234';
-const SESSION_SIZE = 10;
-
 // Priming exchange injected at the start of every session to lock Qwen (and similar models)
 // into English before the first image is sent. Without this, Qwen resets to Chinese on
 // every new session regardless of system prompt or per-message instructions.
@@ -131,19 +129,21 @@ function mimeType(filename) {
 	return ext === 'png' ? 'image/png' : ext === 'webp' ? 'image/webp' : 'image/jpeg';
 }
 
-function buildUserMessage(base64, filename) {
+function buildUserMessage(base64, filename, productName) {
+	const productHint = productName ? `Product: ${productName}. ` : '';
+	const text = `${productHint}Write alt text for this product image. Respond in English only.`;
 	if (LM_STUDIO) {
 		return {
 			role: 'user',
 			content: [
-				{ type: 'text', text: 'Write alt text for this product image. Respond in English only.' },
+				{ type: 'text', text },
 				{ type: 'image_url', image_url: { url: `data:${mimeType(filename)};base64,${base64}` } }
 			]
 		};
 	}
 	return {
 		role: 'user',
-		content: 'Write alt text for this product image. Respond in English only.',
+		content: text,
 		images: [base64]
 	};
 }
@@ -217,6 +217,10 @@ const total = imageItems.length;
 console.log(`Found ${total} Image rows. Model: ${MODEL}${RESUME ? ' (resume mode)' : ''}\n`);
 
 // Pre-flight: check all images exist on disk before starting
+const unmatchedIds = imageItems
+	.map((item) => item.ID?.trim())
+	.filter((id) => id && !filenameById.has(id));
+
 const missingFiles = imageItems
 	.map((item) => {
 		const id = item.ID?.trim();
@@ -226,6 +230,16 @@ const missingFiles = imageItems
 		return fs.existsSync(filePath) ? null : { id, filename };
 	})
 	.filter(Boolean);
+
+if (unmatchedIds.length > 0) {
+	console.warn(
+		`Warning: ${unmatchedIds.length} image ID(s) in the import CSV have no entry in the check report and will be skipped:`
+	);
+	for (const id of unmatchedIds) {
+		console.warn(`  ID=${id}`);
+	}
+	console.warn('');
+}
 
 if (missingFiles.length > 0) {
 	console.warn(`Warning: ${missingFiles.length} image(s) not found in ${imagesDir}:`);
@@ -254,18 +268,27 @@ if (RESUME) {
 	saveProgress(new Set());
 }
 
-// Build a lookup from ID to the mutable row object so we can write results in place
-const rowById = new Map(importRows.map((r) => [r.ID?.trim(), r]));
+// Build a lookup from ID to the mutable row object so we can write results in place.
+// BC's product IDs and image IDs share the same number space, so an image ID can
+// collide with a different product's ID. Prefer Image rows so we always write
+// Image Description to the right row type.
+const rowById = new Map();
+for (const r of importRows) {
+	const id = r.ID?.trim();
+	if (!id) continue;
+	if (!rowById.has(id) || r.Item === 'Image') rowById.set(id, r);
+}
 
 // --- Process a list of image items, returning failures ---
 async function runBatch(items) {
 	const batchFailures = [];
 	const batchSkipped = [];
 	let batchAlreadyDone = 0;
+	let batchUnmatched = 0;
 	const batchTotal = items.length;
 	const systemMessage = { role: 'system', content: SYSTEM_PROMPT };
 	let batchMessages = [systemMessage, ...SESSION_PRIMER];
-	let sessionCount = 0;
+	let lastProductName = null;
 	let batchProcessed = 0;
 
 	for (let i = 0; i < items.length; i++) {
@@ -278,15 +301,11 @@ async function runBatch(items) {
 			continue;
 		}
 
-		if (sessionCount > 0 && sessionCount % SESSION_SIZE === 0) {
-			const bStart = i + 1;
-			const bEnd = Math.min(i + SESSION_SIZE, batchTotal);
-			console.log(`\n--- New session (images ${bStart}–${bEnd}) ---\n`);
-			batchMessages = [systemMessage, ...SESSION_PRIMER];
-		}
-
 		const filename = filenameById.get(id);
-		if (!filename) continue;
+		if (!filename) {
+			batchUnmatched++;
+			continue;
+		}
 
 		const filePath = path.join(imagesDir, filename);
 		if (!fs.existsSync(filePath)) {
@@ -294,10 +313,19 @@ async function runBatch(items) {
 			continue;
 		}
 
+		// Reset session at each product boundary so images from different products
+		// never share context — eliminates brand/model bleed between products.
+		const productName = imageRowById.get(id)?.productName ?? '';
+		if (productName !== lastProductName) {
+			lastProductName = productName;
+			batchMessages = [systemMessage, ...SESSION_PRIMER];
+			console.log(`\n--- Product: ${productName || '(unknown)'} ---\n`);
+		}
+
 		const base64 = fs.readFileSync(filePath).toString('base64');
 		console.log(`${displayIndex} ${filename}`);
 
-		const userMessage = buildUserMessage(base64, filename);
+		const userMessage = buildUserMessage(base64, filename, productName);
 
 		let altText;
 		let failed = false;
@@ -328,14 +356,13 @@ async function runBatch(items) {
 			const row = rowById.get(id);
 			if (row) row['Image Description'] = altText;
 			batchMessages.push(userMessage, { role: 'assistant', content: altText });
-			sessionCount++;
 			batchProcessed++;
 			completed.add(id);
 			saveProgress(completed);
 		}
 	}
 
-	return { batchFailures, batchProcessed, batchSkipped, batchAlreadyDone };
+	return { batchFailures, batchProcessed, batchSkipped, batchAlreadyDone, batchUnmatched };
 }
 
 function retryItemsFor(failureList) {
@@ -362,7 +389,8 @@ let {
 	batchFailures: failures,
 	batchProcessed: p1,
 	batchSkipped: skipped,
-	batchAlreadyDone: alreadyDone
+	batchAlreadyDone: alreadyDone,
+	batchUnmatched: unmatched
 } = await runBatch(imageItems);
 processed += p1;
 
@@ -380,6 +408,8 @@ fs.writeFileSync(outputCsv, stringify(importRows, { header: true, columns: heade
 console.log(`\nDone! ${processed} processed → ${outputCsv}`);
 if (alreadyDone > 0) console.log(`  ${alreadyDone} skipped (already completed)`);
 if (skipped.length > 0) console.log(`  ${skipped.length} skipped (file not found on disk)`);
+if (unmatched > 0)
+	console.log(`  ${unmatched} skipped (ID not in check report — was the check report filtered?)`);
 
 if (failures.length > 0) {
 	console.log(`\nStill failing after auto-retry (${failures.length}):`);
