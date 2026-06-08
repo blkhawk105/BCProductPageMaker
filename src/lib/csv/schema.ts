@@ -10,8 +10,8 @@ export const BC_COLUMNS = {
 	description: 'Description',
 	customFields: 'Custom Fields',
 	pageTitle: 'Page Title',
-	metDesc: 'Meta Description',
-	searchKw: 'Search Keywords',
+	metaDescription: 'Meta Description',
+	searchKeywords: 'Search Keywords',
 	mpn: 'Manufacturer Part Number',
 	Weight: 'Weight:',
 	Width: 'Width:',
@@ -47,8 +47,8 @@ export type DiffRecord = {
 	description?: string;
 	customFields?: CustomField[];
 	pageTitle?: string;
-	metDesc?: string;
-	searchKw?: string;
+	metaDescription?: string;
+	searchKeywords?: string;
 	mpn?: string;
 	Weight?: string;
 	Width?: string;
