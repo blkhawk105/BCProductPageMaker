@@ -31,14 +31,14 @@
 		"playwright": "^1.59.1",
 		"svelte": "^5.55.2",
 		"svelte-check": "^4.4.6",
-		"typescript": "^6.0.2",
+		"typescript": "^6.0.3",
 		"typescript-eslint": "^8.58.1",
 		"vite": "catalog:",
 		"vite-plus": "catalog:",
 		"vitest": "catalog:",
 		"vitest-browser-svelte": "^2.1.0"
 	},
-	"packageManager": "pnpm@11.2.2",
+	"packageManager": "pnpm@11.5.2",
 	"dependencies": {
 		"csv-parse": "^6.2.1",
 		"csv-stringify": "^6.7.0"
