@@ -1,0 +1,55 @@
+{
+	"Ernie Ball": {
+		"url": "https://www.ernieball.com",
+		"altUrls": ["https://ernieball.co.uk", "https://ca.ernieball.com"],
+		"cdn": "shopify",
+		"notes": "CDN at cdn.ernieball.com"
+	},
+	"Gibraltar": {
+		"url": "https://gibraltarhardware.com",
+		"cdn": "shopify",
+		"notes": "CDN at gibraltarhardware.com/cdn/shop/files/"
+	},
+	"Hohner": {
+		"url": "https://hohner.de/en",
+		"cdn": "proprietary",
+		"notes": "Use Productfinder (hohner.de/en/products) for model-specific URLs. hohner.com is industrial sensors (wrong company). Correct spelling is Hohner — do not search for Hoehner."
+	},
+	"Humes & Berg": {
+		"url": "https://www.humesandberg.com",
+		"cdn": "proprietary",
+		"notes": "Brass instrument mutes; limited online catalog — relies on retail partners for product sales"
+	},
+	"Latin Percussion": {
+		"url": "https://www.lpmusic.com",
+		"cdn": "shopify",
+		"notes": "CDN at cdn.shopify.com"
+	},
+	"Mackie": {
+		"url": "https://mackie.com",
+		"cdn": "shopify",
+		"notes": "CDN at mackie.com/cdn/shop/files/ — strip &width= params"
+	},
+	"Tagima": {
+		"url": "https://tagimaguitars.com",
+		"altUrls": ["https://tagima.com.br"],
+		"cdn": "shopify",
+		"notes": "US site has English catalog; BR site may have additional regional models"
+	},
+	"Vic Firth": {
+		"url": "https://vicfirth.com",
+		"cdn": "shopify",
+		"notes": "CDN at vicfirth.com/cdn/shop/files/"
+	},
+	"Yamaha": {
+		"url": "https://usa.yamaha.com",
+		"altUrls": ["https://yamaha.com"],
+		"cdn": "proprietary",
+		"notes": "US subdomain required; global site redirects to regional versions"
+	},
+	"Zildjian": {
+		"url": "https://zildjian.com",
+		"cdn": "shopify",
+		"notes": "Direct /products/[sku] URL 404s — use /search?q=[sku]&type=product. CDN at zildjian.com/cdn/shop/ — strip &width= params, keep ?v= cache-buster."
+	}
+}

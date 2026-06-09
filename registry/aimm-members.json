@@ -1,0 +1,422 @@
+[
+	{
+		"name": "Alamo Music Center",
+		"url": "https://alamomusic.com",
+		"state": "TX",
+		"notes": "San Antonio",
+		"excluded": false
+	},
+	{
+		"name": "Alpha Music",
+		"url": "https://www.alpha-music.com",
+		"state": "VA",
+		"notes": "Virginia Beach",
+		"excluded": false
+	},
+	{
+		"name": "Alto Music",
+		"url": "https://www.altomusic.com",
+		"state": "NY",
+		"notes": "Middletown; large superstore",
+		"excluded": false
+	},
+	{
+		"name": "Amro Music Stores Inc",
+		"url": "https://www.amromusic.com",
+		"state": "TN",
+		"notes": "Memphis; one of largest US stores",
+		"excluded": false
+	},
+	{
+		"name": "Andy's Music",
+		"url": "https://www.andysmusic.com",
+		"state": "AL",
+		"notes": "Mobile",
+		"excluded": false
+	},
+	{
+		"name": "Bananas At Large",
+		"url": "https://www.bananas.com",
+		"state": "CA",
+		"notes": "Santa Rosa",
+		"excluded": false
+	},
+	{
+		"name": "Beacock Music",
+		"url": "https://www.beacockmusic.com",
+		"state": "OR",
+		"notes": "Multiple OR locations (Eugene, Albany, Philomath)",
+		"excluded": false
+	},
+	{
+		"name": "Bertrand's Old Town Music",
+		"url": "https://bertrandsmusic.com",
+		"state": "CA",
+		"notes": "Pasadena",
+		"excluded": false
+	},
+	{
+		"name": "Brighton Music Center",
+		"url": "https://www.brightonmusic.com",
+		"state": "PA",
+		"notes": "New Brighton & Pittsburgh",
+		"excluded": false
+	},
+	{
+		"name": "C.A. House Music",
+		"url": "https://cahousemusic.com",
+		"state": "OH",
+		"notes": "Lancaster",
+		"excluded": false
+	},
+	{
+		"name": "The Candyman Strings & Things",
+		"url": "https://candymansf.com",
+		"state": "NM",
+		"notes": "Santa Fe",
+		"excluded": false
+	},
+	{
+		"name": "Chicago Music Exchange",
+		"url": "https://www.chicagomusicexchange.com",
+		"state": "IL",
+		"notes": "Chicago; known for vintage/used",
+		"excluded": false
+	},
+	{
+		"name": "Chuck Levin's Washington Music Center",
+		"url": "https://www.chucklevins.com",
+		"state": "MD",
+		"notes": "Wheaton",
+		"excluded": false
+	},
+	{
+		"name": "Dietze Music",
+		"url": "https://www.dietzemusic.com",
+		"state": "NE",
+		"notes": "Multiple NE locations (Lincoln, Omaha)",
+		"excluded": false
+	},
+	{
+		"name": "Dunkley Music",
+		"url": "https://www.dunkleymusic.com",
+		"state": "ID",
+		"notes": "Meridian",
+		"excluded": false
+	},
+	{
+		"name": "Easy Music Center",
+		"url": "https://www.easymusiccenter.com",
+		"state": "HI",
+		"notes": "Honolulu",
+		"excluded": false
+	},
+	{
+		"name": "George's Music",
+		"url": "https://www.georgesmusic.com",
+		"state": "FL",
+		"notes": "Multiple FL locations; HQ Jacksonville",
+		"excluded": false
+	},
+	{
+		"name": "Gottschalk Music Center",
+		"url": "https://gottschalkmusiccenter.com",
+		"state": "CA",
+		"notes": "Merced; Central Valley",
+		"excluded": false
+	},
+	{
+		"name": "Haggerty's Music",
+		"url": "https://www.haggertysmusic.com",
+		"state": "SD",
+		"notes": "Rapid City",
+		"excluded": false
+	},
+	{
+		"name": "Heid Music",
+		"url": "https://www.heidmusic.com",
+		"state": "WI",
+		"notes": "Multiple WI locations; HQ Madison",
+		"excluded": false
+	},
+	{
+		"name": "Hugo Helmer Music, Inc.",
+		"url": "https://www.hugohelmermusic.com",
+		"state": "WA",
+		"notes": "Burlington",
+		"excluded": false
+	},
+	{
+		"name": "Instrumental Music Center",
+		"url": "https://www.imc-az.com",
+		"state": "AZ",
+		"notes": "Tucson",
+		"excluded": false
+	},
+	{
+		"name": "Johnstonbaugh's",
+		"url": "https://www.johnstonbaughs.com",
+		"state": "PA",
+		"notes": "Allison Park; Pittsburgh area",
+		"excluded": false
+	},
+	{
+		"name": "Kidder Music",
+		"url": "https://www.kiddermusic.com",
+		"state": "IL",
+		"notes": "Peoria",
+		"excluded": false
+	},
+	{
+		"name": "Manchester Music Mill",
+		"url": "https://www.manchestermusicmill.com",
+		"state": "NH",
+		"notes": "Manchester",
+		"excluded": false
+	},
+	{
+		"name": "Marshall Music Company",
+		"url": "https://www.marshallmusic.com",
+		"state": "MI",
+		"notes": "Multiple MI locations; HQ Lansing area",
+		"excluded": false
+	},
+	{
+		"name": "Menchey Music Service, Inc.",
+		"url": "https://www.mencheymusic.com",
+		"state": "PA",
+		"notes": "Hanover; multiple Central PA/MD locations",
+		"excluded": false
+	},
+	{
+		"name": "Milano Music",
+		"url": "https://milanomusic.com",
+		"state": "AZ",
+		"notes": "Mesa; large 50k sq ft store",
+		"excluded": false
+	},
+	{
+		"name": "Moore Music",
+		"url": "https://shopmooremusiccompany.com",
+		"state": "IA",
+		"notes": "Creston; may be operating as Rieman Music at this location",
+		"excluded": false
+	},
+	{
+		"name": "Mundt Music Co",
+		"url": "https://www.mundtmusic.com",
+		"state": "TX",
+		"notes": "Longview",
+		"excluded": false
+	},
+	{
+		"name": "Mundt Music Tyler",
+		"url": "https://www.mundtmusictyler.com",
+		"state": "TX",
+		"notes": "Tyler; separate site from Longview location",
+		"excluded": false
+	},
+	{
+		"name": "Music Villa",
+		"url": "https://musicvilla.com",
+		"state": "MT",
+		"notes": "Bozeman",
+		"excluded": false
+	},
+	{
+		"name": "The Music Den",
+		"url": "https://www.themusicden.com",
+		"state": "NJ",
+		"notes": "Randolph",
+		"excluded": false
+	},
+	{
+		"name": "The Music Shoppe",
+		"url": "https://themusicshoppe.com",
+		"state": "IL",
+		"notes": "Springfield",
+		"excluded": false
+	},
+	{
+		"name": "Nick Rail Music",
+		"url": "https://www.nickrailmusic.com",
+		"state": "CA",
+		"notes": "Bakersfield",
+		"excluded": false
+	},
+	{
+		"name": "Paige's Music",
+		"url": "https://www.paigesmusic.com",
+		"state": "IN",
+		"notes": "Fishers; band/orchestra specialist",
+		"excluded": false
+	},
+	{
+		"name": "Parkway Music",
+		"url": "https://parkwaymusic.com",
+		"state": "NY",
+		"notes": "Clifton Park",
+		"excluded": false
+	},
+	{
+		"name": "Palen Music Center",
+		"url": "https://palenmusic.com",
+		"state": "KS",
+		"notes": "Wichita",
+		"excluded": false
+	},
+	{
+		"name": "Pecknel Music Company",
+		"url": "https://www.pecknelmusic.com",
+		"state": "SC",
+		"notes": "Greenville",
+		"excluded": false
+	},
+	{
+		"name": "Pellegrino Music & Lesson Center",
+		"url": "https://www.pellegrinomusic.com",
+		"state": "OH",
+		"notes": "Canton",
+		"excluded": false
+	},
+	{
+		"name": "Playground Music Center",
+		"url": "https://shop.playgroundmusiccenter.com",
+		"state": "FL",
+		"notes": "Fort Walton Beach; multiple FL locations",
+		"excluded": false
+	},
+	{
+		"name": "Portland Music Company",
+		"url": "https://portlandmusiccompany.com",
+		"state": "OR",
+		"notes": "Beaverton; multiple OR locations",
+		"excluded": false
+	},
+	{
+		"name": "Portman's Music",
+		"url": "https://www.portmansmusic.com",
+		"state": "GA",
+		"notes": "Multiple GA locations; Albany, Savannah, Augusta, Brunswick",
+		"excluded": false
+	},
+	{
+		"name": "Quinlan & Fabish Music Company",
+		"url": "https://qandf.com",
+		"state": "IL",
+		"notes": "Montgomery; multiple Midwest locations",
+		"excluded": false
+	},
+	{
+		"name": "Ray's Midbell Music",
+		"url": "https://www.midbellmusic.com",
+		"state": "IA",
+		"notes": "Sioux City",
+		"excluded": false
+	},
+	{
+		"name": "Red River Music",
+		"url": "https://redrivermusic.us",
+		"state": "LA",
+		"notes": "Alexandria",
+		"excluded": false
+	},
+	{
+		"name": "Robert M. Sides Family Music Center",
+		"url": "https://www.rmsides.com",
+		"state": "PA",
+		"notes": "State College; multiple PA locations",
+		"excluded": false
+	},
+	{
+		"name": "Royalton Music Center",
+		"url": "https://royaltonmusic.com",
+		"state": "OH",
+		"notes": "North Royalton",
+		"excluded": false
+	},
+	{
+		"name": "Saied Music Company",
+		"url": "https://www.saiedmusic.com",
+		"state": "OK",
+		"notes": "Tulsa",
+		"excluded": false
+	},
+	{
+		"name": "Schmitt Music",
+		"url": "https://www.schmittmusic.com",
+		"state": "NE",
+		"notes": "Multiple Midwest locations; HQ Omaha",
+		"excluded": false
+	},
+	{
+		"name": "Sims Music",
+		"url": "https://www.simsmusic.com",
+		"state": "SC",
+		"notes": "Columbia",
+		"excluded": false
+	},
+	{
+		"name": "Skip's Music",
+		"url": "https://skipsmusic.com",
+		"state": "CA",
+		"notes": "Sacramento",
+		"excluded": false
+	},
+	{
+		"name": "Strait Music Company",
+		"url": "https://www.straitmusic.com",
+		"state": "TX",
+		"notes": "Austin",
+		"excluded": false
+	},
+	{
+		"name": "Summerhays Music",
+		"url": "https://www.summerhaysmusic.com",
+		"state": "UT",
+		"notes": "Multiple UT locations; Layton, Murray, Orem",
+		"excluded": false
+	},
+	{
+		"name": "Tarpley Music",
+		"url": "https://tarpleymusic.com",
+		"state": "TX",
+		"notes": "Amarillo",
+		"excluded": false
+	},
+	{
+		"name": "Ted Brown Music",
+		"url": "https://tedbrownmusic.com",
+		"state": "WA",
+		"notes": "Multiple WA locations; own store — excluded by default per user-preferences.md",
+		"excluded": true
+	},
+	{
+		"name": "Ward-Brodt Music",
+		"url": "https://wardbrodt.com",
+		"state": "WI",
+		"notes": "Fitchburg",
+		"excluded": false
+	},
+	{
+		"name": "West Music",
+		"url": "https://www.westmusic.com",
+		"state": "IA",
+		"notes": "Multiple IA locations; HQ Cedar Falls",
+		"excluded": false
+	},
+	{
+		"name": "White House of Music",
+		"url": "https://whitehouseofmusic.com",
+		"state": "WI",
+		"notes": "Waukesha",
+		"excluded": false
+	},
+	{
+		"name": "Willis Music",
+		"url": "https://willismusic.com",
+		"state": "KY",
+		"notes": "Florence; multiple KY/OH locations",
+		"excluded": false
+	}
+]

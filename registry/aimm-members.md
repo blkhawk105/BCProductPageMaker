@@ -1,6 +1,8 @@
 # AIMM Member Stores
 
-Source of truth for AIMM (Alliance of Independent Music Merchants) member store websites. Read this file when searching AIMM stores as a fallback image or content source.
+> **App source of truth:** `registry/aimm-members.json` — the TypeScript app reads that file directly. Array order = search priority. Keep both in sync when adding or updating stores.
+
+Reference for AIMM (Alliance of Independent Music Merchants) member store websites. Read this file when searching AIMM stores as a fallback image or content source.
 
 **Last updated:** 2026-05-19
 **Source:** https://stores.localmusicshop.com/store-locator (Locally platform, company_id 300791)

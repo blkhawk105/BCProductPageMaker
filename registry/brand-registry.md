@@ -1,6 +1,8 @@
 # Brand Registry
 
-Source of truth for music industry manufacturer website information. Read this file whenever navigating to a manufacturer's website. Do not search the web for a brand's URL before checking here.
+> **App source of truth:** `registry/brands.json` — the TypeScript app reads that file directly. Keep both in sync when adding or updating brands.
+
+Reference for music industry manufacturer website information. Read this file whenever navigating to a manufacturer's website. Do not search the web for a brand's URL before checking here.
 
 ---
 
