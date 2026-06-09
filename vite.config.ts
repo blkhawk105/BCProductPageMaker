@@ -100,6 +100,7 @@ export default defineConfig({
 			'no-useless-catch': 'error',
 			'no-useless-escape': 'error',
 			'no-with': 'error',
+			'no-warning-comments': 'warn',
 			'preserve-caught-error': 'error',
 			'require-yield': 'error',
 			'use-isnan': 'error',
