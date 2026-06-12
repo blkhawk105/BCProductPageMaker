@@ -38,6 +38,16 @@ describe('createOllamaProvider', () => {
 		expect(body.model).toBe('llama3.1');
 	});
 
+	it('does not put system prompt in the messages array', async () => {
+		const fetch = makeFetch({ message: { content: 'hello' } });
+		vi.stubGlobal('fetch', fetch);
+
+		await createOllamaProvider({ provider: 'ollama' }).call('MY SYSTEM', 'input');
+
+		const { messages } = JSON.parse(fetch.mock.calls[0][1].body);
+		expect(messages.every((m: { role: string }) => m.role !== 'system')).toBe(true);
+	});
+
 	it('passes system prompt as top-level system field', async () => {
 		const fetch = makeFetch({ message: { content: 'hello' } });
 		vi.stubGlobal('fetch', fetch);
@@ -83,6 +93,27 @@ describe('createOllamaProvider', () => {
 		expect(result).toBe('Hello');
 	});
 
+	it('includes the correction prompt in the retry messages', async () => {
+		const fetch = vi.fn();
+		vi.stubGlobal('fetch', fetch);
+
+		fetch.mockResolvedValueOnce({
+			ok: true,
+			json: () => Promise.resolve({ message: { content: '你好' } })
+		});
+		fetch.mockResolvedValueOnce({
+			ok: true,
+			json: () => Promise.resolve({ message: { content: 'Hello' } })
+		});
+
+		await createOllamaProvider({ provider: 'ollama' }).call('system', 'input');
+
+		const retryMessages = JSON.parse(fetch.mock.calls[1][1].body).messages;
+		const last = retryMessages.at(-1);
+		expect(last.role).toBe('user');
+		expect(last.content).toMatch(/non-English/);
+	});
+
 	it('throws on non-ok response', async () => {
 		vi.stubGlobal(
 			'fetch',
@@ -96,5 +127,15 @@ describe('createOllamaProvider', () => {
 		await expect(
 			createOllamaProvider({ provider: 'ollama' }).call('system', 'user input')
 		).rejects.toThrow('Ollama error: 500');
+	});
+
+	it('uses a custom host in the endpoint', async () => {
+		const fetch = makeFetch({ message: { content: 'hello' } });
+		vi.stubGlobal('fetch', fetch);
+
+		await createOllamaProvider({ provider: 'ollama', host: 'my-server' }).call('system', 'input');
+
+		const [url] = fetch.mock.calls[0];
+		expect(url).toBe('http://my-server:11434/api/chat');
 	});
 });
