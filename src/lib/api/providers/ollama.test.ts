@@ -57,10 +57,14 @@ describe('createOllamaProvider', () => {
 		const { messages } = JSON.parse(fetch.mock.calls[0][1].body);
 		expect(messages[0].role).toBe('user');
 		expect(messages[1].role).toBe('assistant');
+		expect(messages[2]).toEqual({
+			role: 'user',
+			content: 'my question'
+		});
 	});
 
 	it('retries with override when response contains CJK characters', async () => {
-		const fetch = makeFetch({ message: { content: '你好' } });
+		const fetch = vi.fn();
 		vi.stubGlobal('fetch', fetch);
 
 		// Second call returns clean English
