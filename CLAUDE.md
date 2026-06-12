@@ -28,7 +28,7 @@ When the runbook or any skill says "end the current session and start a fresh on
 | Testing            | Vitest (via Vite+)                                                                 |
 | Formatting         | Prettier                                                                           |
 | Browser automation | Playwright                                                                         |
-| AI                 | `@anthropic-ai/sdk` — `claude-sonnet-4-6`                                          |
+| AI                 | Local LLM via Ollama or LM Studio (`fetch`-based, no external SDK)                 |
 | CSV                | `csv-parse` + `csv-stringify`                                                      |
 | CLI interaction    | `@inquirer/prompts`                                                                |
 
