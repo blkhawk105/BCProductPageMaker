@@ -1,4 +1,5 @@
 import { createOllamaProvider } from './providers/ollama';
+import { createLmStudioProvider } from './providers/lm-studio';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
@@ -33,6 +34,9 @@ export function createProvider(config: ProviderConfig): LlmProvider {
 	switch (config.provider) {
 		case 'ollama':
 			return createOllamaProvider(config);
+
+		case 'lm-studio':
+			return createLmStudioProvider(config);
 
 		default:
 			throw new Error(
