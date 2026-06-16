@@ -2,7 +2,9 @@ import { writeFileSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { callLlm } from '$lib/api/llm';
 import { fetchPageText } from '$lib/api/browser';
-import { getBrandUrl } from '$lib/registry/brands';
+import { getBrandName } from '$lib/api/bc-graphql';
+import { getBrandEntry } from '$lib/registry/brands';
+import { BC_COLUMNS } from '$lib/csv/schema';
 // import { normalizeBcCdnUrl } from '$lib/utils/cdn';
 import type { LlmProvider } from '$lib/api/llm';
 import type { ProductRecord } from '$lib/csv/schema';
@@ -11,20 +13,22 @@ export async function runSpecs(
 	product: ProductRecord,
 	provider: LlmProvider
 ): Promise<{ mpn?: string }> {
-	const brand = product['Brand'] ?? '';
-	const model = product['Model'] ?? '';
-	const sku = product['SKU'] ?? '';
-	const url = getBrandUrl(brand);
+	const brandId = Number(product[BC_COLUMNS.brandId]);
+	const brand = await getBrandName(brandId);
+	if (!brand) throw new Error(`Brand ID ${brandId} not found in BC brand registry`);
 
-	// Make sure there is a valid URL for the requested brand in the registry
-	if (!url) {
-		throw new Error(`No URL found in brand registry for ${brand}`);
+	// Verify the resolved brand name exists in our local registry.
+	// TODO: revisit when we have a UI — consider adding products dynamically or fetching from BC.
+	const entry = getBrandEntry(brand);
+	if (!entry) {
+		throw new Error(`Resolved brand "${brand}" (ID ${brandId}) not found in local brand registry`);
 	}
+	const url = entry.url;
 
 	const pageText = await fetchPageText(url);
 	const result = await callLlm('product-specs.md', pageText, provider);
 
-	const outputDir = join('output', brand, model, sku);
+	const outputDir = join('output', brand, product[BC_COLUMNS.sku]);
 	mkdirSync(outputDir, { recursive: true });
 	writeFileSync(join(outputDir, 'product-features.md'), result, 'utf-8');
 
