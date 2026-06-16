@@ -1,6 +1,8 @@
 import { writeFileSync, readFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { callLlm } from '$lib/api/llm';
+import { getBrandName } from '$lib/api/bc-graphql';
+import { BC_COLUMNS } from '$lib/csv/schema';
 import type { LlmProvider } from '$lib/api/llm';
 import type { ProductRecord } from '$lib/csv/schema';
 
@@ -15,15 +17,19 @@ interface SeoResult {
 }
 
 export async function runSeo(product: ProductRecord, provider: LlmProvider): Promise<SeoResult> {
-	const brand = product['Brand'] ?? '';
-	const model = product['Model'] ?? '';
+	const brandId = Number(product[BC_COLUMNS.brandId]);
 	const sku = product['SKU'] ?? '';
 
-	if (!brand || !model) {
-		throw new Error(`Missing Brand or Model for SEO step: ${JSON.stringify(product)}`);
+	if (!brandId) {
+		throw new Error(`Missing Brand ID for SEO step: ${JSON.stringify(product)}`);
 	}
 
-	const outputDir = join('output', brand, model, sku);
+	const brand = await getBrandName(brandId, sku);
+	if (!brand) {
+		throw new Error(`Brand ID ${brandId} not found in BC brand registry`);
+	}
+
+	const outputDir = join('output', brand, sku);
 	const descriptionPath = join(outputDir, 'product-description.md');
 
 	// Check that product-description.md exists (required by skill)
@@ -44,7 +50,6 @@ export async function runSeo(product: ProductRecord, provider: LlmProvider): Pro
 
 	const userMessage = [
 		`Brand: ${brand}`,
-		`Model: ${model}`,
 		`SKU: ${sku}`,
 		'',
 		'Product copy:',

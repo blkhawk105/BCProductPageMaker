@@ -2,7 +2,9 @@ import { writeFileSync, mkdirSync, readFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { callLlm } from '$lib/api/llm';
 import { fetchPageText } from '$lib/api/browser';
+import { getBrandName } from '$lib/api/bc-graphql';
 import { getBrandUrl } from '$lib/registry/brands';
+import { BC_COLUMNS } from '$lib/csv/schema';
 import type { LlmProvider } from '$lib/api/llm';
 import type { ProductRecord } from '$lib/csv/schema';
 
@@ -14,15 +16,19 @@ interface CopyResult {
 }
 
 export async function runCopy(product: ProductRecord, provider: LlmProvider): Promise<CopyResult> {
-	const brand = product['Brand'] ?? '';
-	const model = product['Model'] ?? '';
+	const brandId = Number(product[BC_COLUMNS.brandId]);
 	const sku = product['SKU'] ?? '';
 
-	if (!brand || !model) {
-		throw new Error(`Missing Brand or Model for copy step: ${JSON.stringify(product)}`);
+	if (!brandId) {
+		throw new Error(`Missing Brand ID for copy step: ${JSON.stringify(product)}`);
 	}
 
-	const outputDir = join('output', brand, model, sku);
+	const brand = await getBrandName(brandId, sku);
+	if (!brand) {
+		throw new Error(`Brand ID ${brandId} not found in BC brand registry`);
+	}
+
+	const outputDir = join('output', brand, sku);
 	const featuresPath = join(outputDir, 'product-features.md');
 
 	// Check that product-features.md exists (required by skill)
@@ -52,7 +58,6 @@ export async function runCopy(product: ProductRecord, provider: LlmProvider): Pr
 
 	const userMessage = [
 		`Brand: ${brand}`,
-		`Model: ${model}`,
 		`SKU: ${sku}`,
 		'',
 		'Spec table:',
