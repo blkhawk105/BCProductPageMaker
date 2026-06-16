@@ -24,6 +24,8 @@ vitest-examples/
 /build
 /output
 user-preferences.md
+registry/bc-brands.json
+registry/bc-categories.json
 
 
 # Env
