@@ -1,8 +1,10 @@
 import { writeFileSync, mkdirSync, readFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
+import { getBrandName, getCategoryNames } from '$lib/api/bc-graphql';
 import { callLlm } from '$lib/api/llm';
 import type { LlmProvider } from '$lib/api/llm';
 import type { ProductRecord, CustomField } from '$lib/csv/schema';
+import { BC_COLUMNS } from '$lib/csv/schema';
 
 const SKILL_FILE = 'product-custom-fields.md';
 
@@ -18,19 +20,23 @@ export async function runCustomFields(
 	product: ProductRecord,
 	provider: LlmProvider
 ): Promise<CustomFieldsResult> {
-	const brand = product['Brand'] ?? '';
-	const model = product['Model'] ?? '';
-	const sku = product['SKU'] ?? '';
-	const category = product['Category'] ?? '';
+	const sku = product[BC_COLUMNS.sku];
+	const brandId = Number(product[BC_COLUMNS.brandId]);
+	const brand = (await getBrandName(brandId, sku)) ?? '';
+	const rawCategories = product[BC_COLUMNS.categories] ?? '';
+	const categoryIds = rawCategories
+		.split(';')
+		.map((s) => Number(s.trim()))
+		.filter((n) => n > 0);
+	const categoryNames = categoryIds.length ? await getCategoryNames(categoryIds, sku) : [];
+	const category = categoryNames.join(', ');
 
 	if (!category) {
-		throw new Error(
-			`No category found for ${brand} ${model} (${sku}) — cannot look up custom fields`
-		);
+		throw new Error(`No category found for ${brand} (${sku}) — cannot look up custom fields`);
 	}
 
 	// Check that product-features.md exists (required by skill)
-	const outputDir = join('output', brand, model, sku);
+	const outputDir = join('output', brand, sku);
 	const featuresPath = join(outputDir, 'product-features.md');
 	if (!existsSync(featuresPath)) {
 		throw new Error(`product-features.md not found at ${featuresPath} — run product-specs first`);
@@ -40,7 +46,6 @@ export async function runCustomFields(
 
 	const userMessage = [
 		`Brand: ${brand}`,
-		`Model: ${model}`,
 		`SKU: ${sku}`,
 		`Category: ${category}`,
 		'',
