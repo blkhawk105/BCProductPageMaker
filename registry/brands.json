@@ -43,7 +43,6 @@
 	},
 	"Yamaha": {
 		"url": "https://usa.yamaha.com",
-		"altUrls": ["https://yamaha.com"],
 		"cdn": "proprietary",
 		"notes": "US subdomain required; global site redirects to regional versions"
 	},
