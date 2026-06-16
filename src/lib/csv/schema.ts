@@ -1,12 +1,13 @@
 // All the columns in a BigCommerce product export that can be worked on
 export const BC_COLUMNS = {
+	brandId: 'Brand ID',
+	categories: 'Categories',
 	item: 'Item',
 	id: 'ID',
 	name: 'Name',
 	sku: 'SKU',
 	options: 'Options',
 	inventoryTracking: 'Inventory Tracking',
-	categories: 'Categories',
 	description: 'Description',
 	customFields: 'Custom Fields',
 	pageTitle: 'Page Title',
@@ -39,6 +40,7 @@ export type CustomField = {
 export type DiffRecord = {
 	item: string;
 	id: string;
+	brandId?: string;
 	name?: string;
 	sku?: string;
 	options?: string;
