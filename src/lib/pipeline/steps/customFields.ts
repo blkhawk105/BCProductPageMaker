@@ -1,6 +1,8 @@
 import { writeFileSync, mkdirSync, readFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
+import { askCategoriesToRemove } from '$lib/pipeline/resolveMissingCategories';
 import { getBrandName, getCategoryNames } from '$lib/api/bc-graphql';
+import type { CategoryResolution } from '$lib/api/bc-graphql';
 import { callLlm } from '$lib/api/llm';
 import type { LlmProvider } from '$lib/api/llm';
 import type { ProductRecord, CustomField } from '$lib/csv/schema';
@@ -14,6 +16,8 @@ interface CustomFieldsResult {
 	category: string | null;
 	unresolved: string[];
 	skipped: boolean; // true if no category found (skill says not to write output)
+	keptCategoryIds: number[]; // IDs that survived removal prompt — for the import CSV
+	removedCategoriesCount: number; // how many source categories were removed (0 = none removed)
 }
 
 export async function runCustomFields(
@@ -24,12 +28,22 @@ export async function runCustomFields(
 	const brandId = Number(product[BC_COLUMNS.brandId]);
 	const brand = (await getBrandName(brandId, sku)) ?? '';
 	const rawCategories = product[BC_COLUMNS.categories] ?? '';
-	const categoryIds = rawCategories
+
+	const originalCategoryIds = rawCategories
 		.split(';')
 		.map((s) => Number(s.trim()))
 		.filter((n) => n > 0);
-	const categoryNames = categoryIds.length ? await getCategoryNames(categoryIds, sku) : [];
-	const category = categoryNames.join(', ');
+
+	let resolution: CategoryResolution;
+	if (originalCategoryIds.length > 0) {
+		resolution = await getCategoryNames(originalCategoryIds, sku, (missing, sku2) =>
+			askCategoriesToRemove(missing, sku2)
+		);
+	} else {
+		resolution = { names: [], keptIds: [] };
+	}
+
+	const category = resolution.names.join(', ');
 
 	if (!category) {
 		throw new Error(`No category found for ${brand} (${sku}) — cannot look up custom fields`);
@@ -69,7 +83,15 @@ export async function runCustomFields(
 			/no custom field definitions found/i.test(result) ||
 			/do not create/i.test(result) ||
 			/stop/i.test(result);
-		return { customFields: [], fields: [], category, unresolved: [], skipped };
+		return {
+			customFields: [],
+			fields: [],
+			category,
+			unresolved: [],
+			skipped,
+			keptCategoryIds: resolution.keptIds,
+			removedCategoriesCount: originalCategoryIds.length - resolution.keptIds.length
+		};
 	}
 
 	// Write output
@@ -79,7 +101,15 @@ export async function runCustomFields(
 	// Extract unresolved count from the summary
 	const unresolved = extractUnresolved(result);
 
-	return { customFields: fields, fields, category, unresolved, skipped: false };
+	return {
+		customFields: fields,
+		fields,
+		category,
+		unresolved,
+		skipped: false,
+		keptCategoryIds: resolution.keptIds,
+		removedCategoriesCount: originalCategoryIds.length - resolution.keptIds.length
+	};
 }
 
 function parseCustomFieldTable(text: string): CustomField[] {

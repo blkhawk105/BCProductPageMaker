@@ -40,6 +40,16 @@ export async function runPipeline(
 	// Assemble DiffRecord — only include properties that have a truthy value.
 	const record: DiffRecord = { item, id, name, sku };
 	if (specsResult.mpn) record.mpn = specsResult.mpn;
+	// Emit categories column when any source categories were removed,
+	// so BC import can delete them. Write kept IDs (partial removal) or
+	// empty string (all removed) to signal the deletion request.
+	if (cfResult.keptCategoryIds.length > 0 || cfResult.removedCategoriesCount > 0) {
+		if (cfResult.keptCategoryIds.length > 0) {
+			record.categories = cfResult.keptCategoryIds.map(String).join(';');
+		} else {
+			record.categories = ''; // all removed → empty string triggers deletion
+		}
+	}
 	if (Array.isArray(cfResult.customFields) && cfResult.customFields.length > 0)
 		record.customFields = cfResult.customFields;
 	if (copyResult.description) record.description = copyResult.description;

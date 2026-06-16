@@ -1,6 +1,9 @@
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { getBrowser } from '$lib/api/browser';
 
+/** @returns subset of `missingIds` to keep, or `[]` to remove all missing. Never returns `null`. */
+export type MissingCategoryResolver = (missingIds: number[], sku: string) => Promise<number[]>;
+
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
@@ -233,33 +236,74 @@ export async function getBrandName(brandId: number, sku?: string): Promise<strin
 	return cache.get(brandId);
 }
 
+/** Result of resolving category IDs — names for LLM context, keptIds for the import CSV. */
+export interface CategoryResolution {
+	names: string[];
+	keptIds: number[]; // IDs that exist in BigCommerce (survived removal prompt)
+}
+
 /**
  * Resolve names for a list of category IDs.
  *
  * Served from disk cache (registry/bc-categories.json) when available. On a
  * miss, the product is fetched by SKU — which also warms the brand cache — so
  * brand and category lookups for the same product share a single API call.
+ *
+ * When `onMissing` is provided, unresolved IDs are resolved interactively (user
+ * selects which to keep). The returned `keptIds` reflect what was actually kept
+ * so the import CSV can be updated without touching source data.
+ *
+ * Only throws if the product ends up with zero valid categories after resolution.
  */
-export async function getCategoryNames(categoryIds: number[], sku?: string): Promise<string[]> {
+export async function getCategoryNames(
+	categoryIds: number[],
+	sku?: string,
+	onMissing?: MissingCategoryResolver
+): Promise<CategoryResolution> {
 	const cache = loadCategoryCache();
-	const missing = categoryIds.filter((id) => !cache.has(id));
 
-	if (missing.length > 0) {
-		if (!sku) {
-			throw new Error(
-				`Category IDs [${missing.join(', ')}] not in cache and no SKU provided for lookup`
-			);
-		}
-
-		await fetchAndCacheProductData(sku);
-
-		const stillMissing = missing.filter((id) => !cache.has(id));
-		if (stillMissing.length > 0) {
-			throw new Error(
-				`Category IDs [${stillMissing.join(', ')}] not found among categories for "${sku}"`
-			);
-		}
+	// Step 1: check all source IDs against disk cache. If everything found, return immediately.
+	const allInCache = categoryIds.every((id) => cache.has(id));
+	if (allInCache) {
+		return { names: categoryIds.map((id) => cache.get(id)!.name), keptIds: [...categoryIds] };
 	}
 
-	return categoryIds.map((id) => cache.get(id)!.name);
+	// Step 2: fetch from BigCommerce to update the cache with this product's actual categories.
+	if (!sku) {
+		throw new Error(
+			`Category IDs [${categoryIds.filter((id) => !cache.has(id)).join(', ')}] not in cache and no SKU provided for lookup`
+		);
+	}
+
+	await fetchAndCacheProductData(sku);
+
+	// Step 3: after the fetch, check which source CSV IDs are STILL missing.
+	// These are genuinely unavailable — they don't belong to this product on BC.
+	const trulyUnavailable = categoryIds.filter((id) => !cache.has(id));
+
+	if (trulyUnavailable.length > 0 && onMissing) {
+		const keptIds = await onMissing(trulyUnavailable, sku);
+		if (keptIds.length === 0) {
+			// User removed all → nothing left, will error below
+		} else if (keptIds.length < trulyUnavailable.length) {
+			// Some were removed — remove from cache so they don't appear in names or keptIds
+			trulyUnavailable.forEach((id) => {
+				if (!keptIds.includes(id)) cache.delete(id);
+			});
+		}
+	} else if (trulyUnavailable.length > 0 && !onMissing) {
+		throw new Error(
+			`Category IDs [${trulyUnavailable.join(', ')}] not found among categories for "${sku}"`
+		);
+	}
+
+	const keptIds = categoryIds.filter((id) => cache.has(id));
+	if (keptIds.length === 0) {
+		throw new Error(`Product "${sku}" has no valid categories — cannot proceed`);
+	}
+
+	return {
+		names: keptIds.map((id) => cache.get(id)!.name),
+		keptIds
+	};
 }

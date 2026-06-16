@@ -70,6 +70,11 @@ export function writeDiffCSV(records: DiffRecord[], outputPath: string): void {
 			row[BC_COLUMNS.mpn] = r.mpn;
 		}
 
+		// Categories: always include when truthy or explicitly empty (deletion signal).
+		if (r.categories !== undefined) {
+			row[BC_COLUMNS.categories] = r.categories;
+		}
+
 		return row;
 	});
 
