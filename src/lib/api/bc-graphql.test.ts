@@ -104,23 +104,66 @@ describe('gqlFetch', () => {
 });
 
 // ---------------------------------------------------------------------------
-// getCategoryNames — unknown ID handling
+// getCategoryNames — cache hit and no-SKU miss
 // ---------------------------------------------------------------------------
 
 describe('getCategoryNames', () => {
 	const CACHE_PATH = 'registry/bc-categories.json';
-	const FAKE_CATEGORIES = '{"10": {"name": "Test", "path": "/test/"}}';
 
-	it('throws when a category ID is not found in the cache', async () => {
-		writeFileSync(CACHE_PATH, FAKE_CATEGORIES, 'utf-8');
+	it('resolves names from disk cache', async () => {
+		writeFileSync(
+			CACHE_PATH,
+			JSON.stringify({ 10: { name: 'Trumpets', path: '/trumpets/' } }),
+			'utf-8'
+		);
+		vi.resetModules();
+		try {
+			const { getCategoryNames } = await import('$lib/api/bc-graphql');
+			await expect(getCategoryNames([10])).resolves.toEqual(['Trumpets']);
+		} finally {
+			if (existsSync(CACHE_PATH)) rmSync(CACHE_PATH);
+		}
+	});
 
+	it('throws with a clear message when ID is missing and no SKU is provided', async () => {
+		writeFileSync(
+			CACHE_PATH,
+			JSON.stringify({ 10: { name: 'Trumpets', path: '/trumpets/' } }),
+			'utf-8'
+		);
+		vi.resetModules();
 		try {
 			const { getCategoryNames } = await import('$lib/api/bc-graphql');
 			await expect(getCategoryNames([99])).rejects.toThrow(
-				'Category ID 99 not found in BC category registry'
+				'Category IDs [99] not in cache and no SKU provided for lookup'
 			);
 		} finally {
 			if (existsSync(CACHE_PATH)) rmSync(CACHE_PATH);
 		}
+	});
+});
+
+// ---------------------------------------------------------------------------
+// getBrandName — cache hit and no-SKU miss
+// ---------------------------------------------------------------------------
+
+describe('getBrandName', () => {
+	const CACHE_PATH = 'registry/bc-brands.json';
+
+	it('resolves a name from disk cache', async () => {
+		writeFileSync(CACHE_PATH, JSON.stringify({ 42: 'Yamaha' }), 'utf-8');
+		vi.resetModules();
+		try {
+			const { getBrandName } = await import('$lib/api/bc-graphql');
+			await expect(getBrandName(42)).resolves.toBe('Yamaha');
+		} finally {
+			if (existsSync(CACHE_PATH)) rmSync(CACHE_PATH);
+		}
+	});
+
+	it('returns undefined when ID is missing and no SKU is provided', async () => {
+		vi.resetModules();
+		const { getBrandName } = await import('$lib/api/bc-graphql');
+		await expect(getBrandName(999)).resolves.toBeUndefined();
 	});
 });

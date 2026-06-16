@@ -9,19 +9,6 @@ interface StoreWindow extends Window {
 	BC_STOREFRONT_TOKEN?: string;
 }
 
-interface PageInfo {
-	hasNextPage: boolean;
-	endCursor: string;
-}
-
-interface BrandEdge {
-	node: { entityId: number; name: string };
-}
-
-interface BrandsResult {
-	site: { brands: { pageInfo: PageInfo; edges: BrandEdge[] } };
-}
-
 interface CategoryTreeNode {
 	entityId: number;
 	name: string;
@@ -29,8 +16,13 @@ interface CategoryTreeNode {
 	children?: CategoryTreeNode[];
 }
 
-interface CategoryTreeResult {
-	site: { categoryTree: CategoryTreeNode | CategoryTreeNode[] };
+interface ProductDataResult {
+	site: {
+		product: {
+			brand: { entityId: number; name: string } | null;
+			categories: { edges: { node: { entityId: number; name: string; path: string } }[] };
+		} | null;
+	};
 }
 
 // ---------------------------------------------------------------------------
@@ -41,8 +33,6 @@ const GRAPHQL_ENDPOINT = 'https://store-10xdzq6qo9.mybigcommerce.com/graphql';
 const STORE_URL = 'https://www.tedbrownmusic.com';
 const BRANDS_CACHE_PATH = 'registry/bc-brands.json';
 const CATEGORIES_CACHE_PATH = 'registry/bc-categories.json';
-const SHOP_BY_CATEGORY_ROOT_ID = 30;
-const FIRST_PAGE_SIZE = 50;
 
 // ---------------------------------------------------------------------------
 // Token extraction
@@ -107,47 +97,26 @@ export async function gqlFetch(token: string, query: string): Promise<GqlRespons
 
 let _brandCache: Map<number, string> | null = null;
 
-async function loadBrandCache(): Promise<Map<number, string>> {
+function loadBrandCache(): Map<number, string> {
 	if (_brandCache) return _brandCache;
 
-	// Try disk first.
+	_brandCache = new Map<number, string>();
+
 	if (existsSync(BRANDS_CACHE_PATH)) {
 		const raw = JSON.parse(readFileSync(BRANDS_CACHE_PATH, 'utf-8')) as Record<
 			number | string,
 			string
 		>;
-		_brandCache = new Map<number, string>();
 		for (const [id, name] of Object.entries(raw)) {
 			_brandCache.set(Number(id), name);
 		}
-		return _brandCache;
 	}
 
-	// Cold start — fetch from API.
-	const token = await getToken();
-	const map = new Map<number, string>();
-	let after: string | null = null;
-	do {
-		const cursorArg = after ? `, after: "${after}"` : '';
-		const query = `{ site { brands(first: ${FIRST_PAGE_SIZE}${cursorArg}) {
-      pageInfo { hasNextPage endCursor }
-      edges { node { entityId name } }
-    } } }`;
-		const res = await gqlFetch(token, query);
-		const data = (res.data ?? {}) as BrandsResult;
-		const page = data.site.brands;
-		for (const { node } of page.edges) map.set(node.entityId, node.name);
-		after = page.pageInfo.hasNextPage ? page.pageInfo.endCursor : null;
-	} while (after);
-
-	_brandCache = map;
-	writeFileSync(BRANDS_CACHE_PATH, JSON.stringify(Object.fromEntries(map), null, 2), 'utf-8');
 	return _brandCache;
 }
 
-export async function getBrandName(brandId: number): Promise<string | undefined> {
-	const cache = await loadBrandCache();
-	return cache.get(brandId);
+function persistBrandCache(cache: Map<number, string>): void {
+	writeFileSync(BRANDS_CACHE_PATH, JSON.stringify(Object.fromEntries(cache), null, 2), 'utf-8');
 }
 
 // ---------------------------------------------------------------------------
@@ -173,96 +142,124 @@ export function flattenCategoryTree(
 	return flat;
 }
 
-/**
- * Resolve the category tree from a BC Storefront API response.
- * categoryTree may be returned as:
- *   - A single node (object) with `children` arrays at each depth
- *   - An array of root-level nodes (when multiple top-level categories exist)
- * We recurse into children lists, building a flat Map keyed by entityId.
- */
-function resolveCategoryTree(root: CategoryTreeNode | CategoryTreeNode[]): CategoryTreeNode[] {
-	if (Array.isArray(root)) return root; // already the list we need
-
-	// Single node — return its children if present, otherwise this node alone.
-	return root.children?.length ? root.children : [root];
-}
-
 // ---------------------------------------------------------------------------
 // Category cache — lazy load + persist
 // ---------------------------------------------------------------------------
 
 let _categoryCache: Map<number, CategoryNode> | null = null;
 
-async function loadCategoryCache(): Promise<Map<number, CategoryNode>> {
+function loadCategoryCache(): Map<number, CategoryNode> {
 	if (_categoryCache) return _categoryCache;
 
-	// Try disk first.
+	_categoryCache = new Map<number, CategoryNode>();
+
 	if (existsSync(CATEGORIES_CACHE_PATH)) {
 		const raw = JSON.parse(readFileSync(CATEGORIES_CACHE_PATH, 'utf-8')) as Record<
 			number | string,
 			{ name: string; path: string; parentId?: number }
 		>;
-		_categoryCache = new Map<number, CategoryNode>();
 		for (const [id, node] of Object.entries(raw)) {
 			_categoryCache.set(Number(id), node);
 		}
-		return _categoryCache;
 	}
 
-	// Cold start — fetch the full category tree from BC.
-	const token = await getToken();
+	return _categoryCache;
+}
 
-	const query = `{ site { categoryTree {
-    entityId name path children {
-      entityId name path children {
-        entityId name path children {
-          entityId name path children {
-            entityId name path children {
-              entityId name path
-            }
-          }
+function persistCategoryCache(cache: Map<number, CategoryNode>): void {
+	writeFileSync(CATEGORIES_CACHE_PATH, JSON.stringify(Object.fromEntries(cache), null, 2), 'utf-8');
+}
+
+// ---------------------------------------------------------------------------
+// Shared product lookup — populates both caches in one query
+// ---------------------------------------------------------------------------
+
+/**
+ * Fetch brand + categories for a product by SKU and write both into their
+ * respective disk caches. Called only on a cache miss; subsequent lookups for
+ * the same brand/category IDs hit the in-memory map and never touch the API.
+ */
+async function fetchAndCacheProductData(sku: string): Promise<void> {
+	const token = await getToken();
+	const query = `{
+  site {
+    product(sku: "${sku}") {
+      brand { entityId name }
+      categories {
+        edges {
+          node { entityId name path }
         }
       }
     }
-  } } }`;
-
+  }
+}`;
 	const res = await gqlFetch(token, query);
-	const data = (res.data ?? {}) as CategoryTreeResult;
-	const rawList = resolveCategoryTree(data.site.categoryTree);
+	const data = (res.data ?? {}) as ProductDataResult;
+	if (!data.site.product) throw new Error(`Product "${sku}" not found in BigCommerce`);
 
-	// Find the "Shop By Category" root (entityId === 30).
-	let treeRoot: CategoryTreeNode | null = null;
-	for (const node of rawList) {
-		if (node.entityId === SHOP_BY_CATEGORY_ROOT_ID) {
-			treeRoot = node;
-			break;
-		}
+	const { brand, categories } = data.site.product;
+
+	const brandCache = loadBrandCache();
+	if (brand) {
+		brandCache.set(brand.entityId, brand.name);
+		persistBrandCache(brandCache);
 	}
 
-	if (!treeRoot) {
-		throw new Error(
-			`Could not find "Shop By Category" node (entityId: ${SHOP_BY_CATEGORY_ROOT_ID}) in BC category tree`
-		);
+	const categoryCache = loadCategoryCache();
+	for (const { node } of categories.edges) {
+		categoryCache.set(node.entityId, { name: node.name, path: node.path });
 	}
+	persistCategoryCache(categoryCache);
+}
 
-	// Flatten starting from treeRoot.children (depth 1), with parentId = root's entityId.
-	const children = treeRoot.children ?? [];
-	const flat = flattenCategoryTree(children, treeRoot.entityId);
+// ---------------------------------------------------------------------------
+// Public API
+// ---------------------------------------------------------------------------
 
-	_categoryCache = flat;
-	writeFileSync(CATEGORIES_CACHE_PATH, JSON.stringify(Object.fromEntries(flat), null, 2), 'utf-8');
-	return _categoryCache;
+/**
+ * Look up a brand name by its BC entity ID.
+ *
+ * Served from disk cache (registry/bc-brands.json) when available. On a miss,
+ * the product is fetched by SKU — which also warms the category cache — so
+ * brand and category lookups for the same product share a single API call.
+ */
+export async function getBrandName(brandId: number, sku?: string): Promise<string | undefined> {
+	const cache = loadBrandCache();
+	if (cache.has(brandId)) return cache.get(brandId);
+
+	if (!sku) return undefined;
+
+	await fetchAndCacheProductData(sku);
+	return cache.get(brandId);
 }
 
 /**
  * Resolve names for a list of category IDs.
- * Throws on any unknown ID — no silent skipping.
+ *
+ * Served from disk cache (registry/bc-categories.json) when available. On a
+ * miss, the product is fetched by SKU — which also warms the brand cache — so
+ * brand and category lookups for the same product share a single API call.
  */
-export async function getCategoryNames(categoryIds: number[]): Promise<string[]> {
-	const cache = await loadCategoryCache();
-	return categoryIds.map((id) => {
-		const node = cache.get(id);
-		if (!node) throw new Error(`Category ID ${id} not found in BC category registry`);
-		return node.name;
-	});
+export async function getCategoryNames(categoryIds: number[], sku?: string): Promise<string[]> {
+	const cache = loadCategoryCache();
+	const missing = categoryIds.filter((id) => !cache.has(id));
+
+	if (missing.length > 0) {
+		if (!sku) {
+			throw new Error(
+				`Category IDs [${missing.join(', ')}] not in cache and no SKU provided for lookup`
+			);
+		}
+
+		await fetchAndCacheProductData(sku);
+
+		const stillMissing = missing.filter((id) => !cache.has(id));
+		if (stillMissing.length > 0) {
+			throw new Error(
+				`Category IDs [${stillMissing.join(', ')}] not found among categories for "${sku}"`
+			);
+		}
+	}
+
+	return categoryIds.map((id) => cache.get(id)!.name);
 }
