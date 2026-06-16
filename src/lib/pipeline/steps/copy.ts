@@ -5,6 +5,7 @@ import { fetchPageText } from '$lib/api/browser';
 import { getBrandName } from '$lib/api/bc-graphql';
 import { getBrandUrl } from '$lib/registry/brands';
 import { BC_COLUMNS } from '$lib/csv/schema';
+import { cleanDom } from '$lib/utils/cleanDom';
 import type { LlmProvider } from '$lib/api/llm';
 import type { ProductRecord } from '$lib/csv/schema';
 
@@ -50,7 +51,7 @@ export async function runCopy(product: ProductRecord, provider: LlmProvider): Pr
 	let manufacturerPageText: string | null = null;
 	if (brandUrl) {
 		try {
-			manufacturerPageText = await fetchPageText(brandUrl);
+			manufacturerPageText = cleanDom(await fetchPageText(brandUrl));
 		} catch {
 			// Manufacturer page unavailable — skill says to fall back to specs
 		}

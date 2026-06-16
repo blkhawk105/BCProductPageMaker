@@ -5,6 +5,7 @@ import { fetchPageText } from '$lib/api/browser';
 import { getBrandName } from '$lib/api/bc-graphql';
 import { getBrandEntry } from '$lib/registry/brands';
 import { BC_COLUMNS } from '$lib/csv/schema';
+import { cleanDom } from '$lib/utils/cleanDom';
 // import { normalizeBcCdnUrl } from '$lib/utils/cdn';
 import type { LlmProvider } from '$lib/api/llm';
 import type { ProductRecord } from '$lib/csv/schema';
@@ -26,8 +27,8 @@ export async function runSpecs(
 	}
 	const url = entry.url;
 
-	const pageText = await fetchPageText(url);
-	const result = await callLlm('product-specs.md', pageText, provider);
+	const rawText = await fetchPageText(url);
+	const result = await callLlm('product-specs.md', cleanDom(rawText), provider);
 
 	const outputDir = join('output', brand, product[BC_COLUMNS.sku]);
 	mkdirSync(outputDir, { recursive: true });
