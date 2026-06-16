@@ -1,4 +1,5 @@
 import type { ProductRecord, DiffRecord } from '$lib/csv/schema';
+import { BC_COLUMNS } from '$lib/csv/schema';
 import type { LlmProvider } from '$lib/api/llm';
 import { runSpecs } from './steps/specs';
 import { runCustomFields } from './steps/customFields';
@@ -19,7 +20,7 @@ export async function runPipeline(
 	provider: LlmProvider
 ): Promise<DiffRecord> {
 	const item = product['Item'] ?? '';
-	const id = product['Product ID'] ?? '';
+	const id = product[BC_COLUMNS.id] ?? '';
 	const name = product['Name'] ?? '';
 	const sku = product['SKU'] ?? '';
 

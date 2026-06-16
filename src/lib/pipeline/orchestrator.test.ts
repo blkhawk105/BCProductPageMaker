@@ -14,7 +14,7 @@ vi.mock('./steps/seo', async () => ({ runSeo: mockRunSeo }));
 function createMockProduct() {
 	return {
 		Item: '12345',
-		'Product ID': '42',
+		ID: '42',
 		Name: 'Test Product',
 		SKU: 'TP-001',
 		Category: 'Brass'

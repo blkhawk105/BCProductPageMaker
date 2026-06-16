@@ -38,8 +38,6 @@ export function writeDiffCSV(records: DiffRecord[], outputPath: string): void {
 			[BC_COLUMNS.id]: r.id
 		};
 
-		row[BC_COLUMNS.item] = r.item;
-
 		if (r.name) {
 			row[BC_COLUMNS.name] = r.name;
 		}

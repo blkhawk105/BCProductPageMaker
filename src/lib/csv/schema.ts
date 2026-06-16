@@ -28,7 +28,7 @@ export type ProductRecord = {
 
 // A parsed Custom Fields array entry
 export type CustomField = {
-	int?: number;
+	id?: number;
 	name: string;
 	value: string;
 };

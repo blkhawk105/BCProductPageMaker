@@ -67,7 +67,7 @@ console.log(
 const selected = await checkbox({
 	message: 'Select products to process:',
 	choices: products.map((p) => ({
-		name: `${p[BC_COLUMNS.name]} (${p[BC_COLUMNS.sku]})`,
+		name: `${p[BC_COLUMNS.name]} (${p[BC_COLUMNS.sku]}) — Description: ${p[BC_COLUMNS.description] ? 'present' : 'empty'}`,
 		value: p
 	}))
 });
