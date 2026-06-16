@@ -82,7 +82,7 @@ async function getToken(): Promise<string> {
 /** Return the full JSON — GraphQL responses are shapeless at compile time. */
 type GqlResponseBody = { data?: unknown; errors?: { message: string }[] };
 
-async function gqlFetch(token: string, query: string): Promise<GqlResponseBody> {
+export async function gqlFetch(token: string, query: string): Promise<GqlResponseBody> {
 	const res = await fetch(GRAPHQL_ENDPOINT, {
 		method: 'POST',
 		headers: {
@@ -156,7 +156,8 @@ export async function getBrandName(brandId: number): Promise<string | undefined>
 
 export type CategoryNode = { name: string; path: string; parentId?: number };
 
-function flattenCategoryTree(
+/** @internal -- exported only for testing. */
+export function flattenCategoryTree(
 	nodes: CategoryTreeNode[],
 	parentId: number | undefined
 ): Map<number, CategoryNode> {
