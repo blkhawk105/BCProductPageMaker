@@ -13,8 +13,9 @@ export async function runSpecs(
 	product: ProductRecord,
 	provider: LlmProvider
 ): Promise<{ mpn?: string }> {
+	const sku = product[BC_COLUMNS.sku];
 	const brandId = Number(product[BC_COLUMNS.brandId]);
-	const brand = await getBrandName(brandId);
+	const brand = await getBrandName(brandId, sku);
 	if (!brand) throw new Error(`Brand ID ${brandId} not found in BC brand registry`);
 
 	// Verify the resolved brand name exists in our local registry.
