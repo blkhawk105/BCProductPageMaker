@@ -1,6 +1,7 @@
 // All the columns in a BigCommerce product export that can be worked on
 export const BC_COLUMNS = {
 	brandId: 'Brand ID',
+	upcEan: 'UPC/EAN',
 	categories: 'Categories',
 	item: 'Item',
 	id: 'ID',
