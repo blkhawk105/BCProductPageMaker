@@ -21,12 +21,12 @@ export const BC_COLUMNS = {
 	Depth: 'Depth:',
 	IsVisible: 'IsVisible:',
 	IsFeatured: 'IsFeatured:'
-} as const;
+};
 
-// One row from the BC export
-export type ProductRecord = {
-	[K in keyof typeof BC_COLUMNS]: string;
-} & Record<string, string>; // This allows extra columns to pass through
+// One row from the BC export.
+// BC_COLUMNS values ('Brand ID', 'UPC/EAN', etc.) are the actual CSV column names,
+// so the runtime shape is Record<string, string> — not a mapped type over short key names.
+export type ProductRecord = Record<string, string>;
 
 // A parsed Custom Fields array entry
 export type CustomField = {
