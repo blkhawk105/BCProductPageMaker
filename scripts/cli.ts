@@ -64,9 +64,11 @@ console.log(
 	`Provider: ${providerConfig.provider}${providerConfig.model ? ` (${providerConfig.model})` : ''}\n`
 );
 
+// Filter to Product rows only (exclude Variant/Image/Video interleaved rows)
+const productRows = products.filter((p) => p[BC_COLUMNS.item] === 'Product');
 const selected = await checkbox({
 	message: 'Select products to process:',
-	choices: products.map((p) => ({
+	choices: productRows.map((p) => ({
 		name: `${p[BC_COLUMNS.name]} (${p[BC_COLUMNS.sku]}) — Description: ${p[BC_COLUMNS.description] ? 'present' : 'empty'}`,
 		value: p
 	}))
@@ -81,7 +83,7 @@ const results = [];
 for (const product of selected) {
 	const productName = product[BC_COLUMNS.name];
 	console.log(`\nRunning pipeline for: ${productName}`);
-	results.push(await runPipeline(product, provider));
+	results.push(await runPipeline(product, products, provider));
 }
 
 await closeBrowser();
