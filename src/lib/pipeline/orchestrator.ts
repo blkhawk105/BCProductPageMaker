@@ -1,10 +1,13 @@
 import type { ProductRecord, DiffRecord } from '$lib/csv/schema';
 import { BC_COLUMNS } from '$lib/csv/schema';
 import type { LlmProvider } from '$lib/api/llm';
+import { getBrandName } from '$lib/api/bc-graphql';
 import { runSpecs } from './steps/specs';
 import { runCustomFields } from './steps/customFields';
 import { runCopy } from './steps/copy';
 import { runSeo } from './steps/seo';
+import { getVariantRows } from '$lib/csv/group-product';
+import { buildProductContext } from './product-context';
 
 type StepName = 'Specs' | 'Custom Fields' | 'Copy' | 'SEO';
 
@@ -17,28 +20,44 @@ async function step(name: StepName, fn: () => Promise<unknown>): Promise<unknown
 
 export async function runPipeline(
 	product: ProductRecord,
+	allRows: ProductRecord[],
 	provider: LlmProvider
 ): Promise<DiffRecord> {
-	const item = product['Item'] ?? '';
-	const id = product[BC_COLUMNS.id] ?? '';
-	const name = product['Name'] ?? '';
-	const sku = product['SKU'] ?? '';
+	// Guard before Number() — Number('') === 0, not NaN, so an empty Brand ID
+	// would silently pass a 0 to getBrandName() and rely on its internal fallback.
+	if (!product[BC_COLUMNS.brandId]) {
+		throw new Error(
+			`Product "${product[BC_COLUMNS.name]}" has no Brand ID — cannot look up brand name`
+		);
+	}
+	const brandId = Number(product[BC_COLUMNS.brandId]);
+	const sku = product[BC_COLUMNS.sku] ?? '';
+	const brandName = await getBrandName(brandId, sku);
+	if (!brandName) throw new Error(`Brand ID ${brandId} not found in BC brand registry`);
 
-	const specsResult = (await step('Specs', () => runSpecs(product, provider))) as Awaited<
+	const variantRows = getVariantRows(allRows, product);
+	const ctx = buildProductContext(product, variantRows, brandName);
+
+	const specsResult = (await step('Specs', () => runSpecs(product, ctx, provider))) as Awaited<
 		ReturnType<typeof runSpecs>
 	>;
 	const cfResult = (await step('Custom Fields', () =>
-		runCustomFields(product, provider)
+		runCustomFields(product, ctx, provider)
 	)) as Awaited<ReturnType<typeof runCustomFields>>;
-	const copyResult = (await step('Copy', () => runCopy(product, provider))) as Awaited<
+	const copyResult = (await step('Copy', () => runCopy(product, ctx, provider))) as Awaited<
 		ReturnType<typeof runCopy>
 	>;
-	const seoResult = (await step('SEO', () => runSeo(product, provider))) as Awaited<
+	const seoResult = (await step('SEO', () => runSeo(product, ctx, provider))) as Awaited<
 		ReturnType<typeof runSeo>
 	>;
 
 	// Assemble DiffRecord — only include properties that have a truthy value.
-	const record: DiffRecord = { item, id, name, sku };
+	const record: DiffRecord = {
+		item: product['Item'] ?? '',
+		id: product[BC_COLUMNS.id] ?? '',
+		name: product['Name'] ?? '',
+		sku
+	};
 	if (specsResult.mpn) record.mpn = specsResult.mpn;
 	// Emit categories column when any source categories were removed,
 	// so BC import can delete them. Write kept IDs (partial removal) or

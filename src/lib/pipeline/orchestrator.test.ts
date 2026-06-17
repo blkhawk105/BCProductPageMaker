@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vite-plus/test';
+import type { ProductRecord } from '$lib/csv/schema';
 
 // Module-level mocks — these apply before any code that imports the step modules.
 const mockRunSpecs = vi.fn();
@@ -11,13 +12,29 @@ vi.mock('./steps/customFields', async () => ({ runCustomFields: mockRunCustomFie
 vi.mock('./steps/copy', async () => ({ runCopy: mockRunCopy }));
 vi.mock('./steps/seo', async () => ({ runSeo: mockRunSeo }));
 
-function createMockProduct() {
+function createMockProduct(): ProductRecord {
 	return {
-		Item: '12345',
-		ID: '42',
-		Name: 'Test Product',
-		SKU: 'TP-001',
-		Category: 'Brass'
+		brandId: '',
+		upcEan: '',
+		categories: '',
+		item: 'Product',
+		id: '42',
+		name: 'Test Product',
+		sku: 'TP-001',
+		options: '',
+		inventoryTracking: 'None',
+		description: '',
+		customFields: '',
+		pageTitle: '',
+		metaDescription: '',
+		searchKeywords: '',
+		mpn: '',
+		Weight: '',
+		Width: '',
+		Height: '',
+		Depth: '',
+		IsVisible: '1',
+		IsFeatured: ''
 	};
 }
 
@@ -46,7 +63,8 @@ describe('runPipeline', () => {
 	it('assembles a DiffRecord from all step results', async () => {
 		setupDefaults();
 		const { runPipeline } = await import('./orchestrator');
-		const result = await runPipeline(createMockProduct() as never, {} as never);
+		const allRows = [createMockProduct()] as ProductRecord[];
+		const result = await runPipeline(createMockProduct(), allRows, {} as never);
 
 		expect(result.item).toBe('12345');
 		expect(result.id).toBe('42');
@@ -63,7 +81,8 @@ describe('runPipeline', () => {
 	it('runs steps in order and calls each exactly once', async () => {
 		setupDefaults();
 		const { runPipeline } = await import('./orchestrator');
-		await runPipeline(createMockProduct() as never, {} as never);
+		const allRows = [createMockProduct()] as ProductRecord[];
+		await runPipeline(createMockProduct(), allRows, {} as never);
 
 		expect(mockRunSpecs).toHaveBeenCalledTimes(1);
 		expect(mockRunCustomFields).toHaveBeenCalledTimes(1);
@@ -92,7 +111,8 @@ describe('runPipeline', () => {
 		});
 
 		const { runPipeline } = await import('./orchestrator');
-		const result = await runPipeline(createMockProduct() as never, {} as never);
+		const allRows = [createMockProduct()] as ProductRecord[];
+		const result = await runPipeline(createMockProduct(), allRows, {} as never);
 
 		expect(result.item).toBe('12345');
 		expect(result.customFields).toBeUndefined();
