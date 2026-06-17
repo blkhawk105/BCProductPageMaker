@@ -1,12 +1,14 @@
 import { writeFileSync, mkdirSync, readFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { askCategoriesToRemove } from '$lib/pipeline/resolveMissingCategories';
-import { getBrandName, getCategoryNames } from '$lib/api/bc-graphql';
+import { getCategoryNames } from '$lib/api/bc-graphql';
 import type { CategoryResolution } from '$lib/api/bc-graphql';
 import { callLlm } from '$lib/api/llm';
 import type { LlmProvider } from '$lib/api/llm';
 import type { ProductRecord, CustomField } from '$lib/csv/schema';
 import { BC_COLUMNS } from '$lib/csv/schema';
+import type { ProductContext } from '../product-context';
+import { formatProductContext } from '../product-context';
 
 const SKILL_FILE = 'product-custom-fields.md';
 
@@ -22,11 +24,11 @@ interface CustomFieldsResult {
 
 export async function runCustomFields(
 	product: ProductRecord,
+	ctx: ProductContext,
 	provider: LlmProvider
 ): Promise<CustomFieldsResult> {
+	const brand = ctx.brandName;
 	const sku = product[BC_COLUMNS.sku];
-	const brandId = Number(product[BC_COLUMNS.brandId]);
-	const brand = (await getBrandName(brandId, sku)) ?? '';
 	const rawCategories = product[BC_COLUMNS.categories] ?? '';
 
 	const originalCategoryIds = rawCategories
@@ -58,14 +60,8 @@ export async function runCustomFields(
 
 	const featuresText = readFileSync(featuresPath, 'utf-8');
 
-	const userMessage = [
-		`Brand: ${brand}`,
-		`SKU: ${sku}`,
-		`Category: ${category}`,
-		'',
-		'Spec table:',
-		featuresText
-	].join('\n');
+	const contextBlock = formatProductContext(ctx);
+	const userMessage = [contextBlock, '', 'Spec table:', featuresText].join('\n');
 
 	const result = await callLlm(SKILL_FILE, userMessage, provider);
 
