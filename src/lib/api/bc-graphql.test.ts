@@ -119,7 +119,8 @@ describe('getCategoryNames', () => {
 		vi.resetModules();
 		try {
 			const { getCategoryNames } = await import('$lib/api/bc-graphql');
-			await expect(getCategoryNames([10])).resolves.toEqual(['Trumpets']);
+			const res = await getCategoryNames([10]);
+			expect(res.names).toEqual(['Trumpets']);
 		} finally {
 			if (existsSync(CACHE_PATH)) rmSync(CACHE_PATH);
 		}
