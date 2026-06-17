@@ -2,33 +2,33 @@ import { writeFileSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { callLlm } from '$lib/api/llm';
 import { fetchPageText } from '$lib/api/browser';
-import { getBrandName } from '$lib/api/bc-graphql';
 import { getBrandEntry } from '$lib/registry/brands';
 import { BC_COLUMNS } from '$lib/csv/schema';
 import { cleanDom } from '$lib/utils/cleanDom';
-// import { normalizeBcCdnUrl } from '$lib/utils/cdn';
 import type { LlmProvider } from '$lib/api/llm';
 import type { ProductRecord } from '$lib/csv/schema';
+import type { ProductContext } from '../product-context';
+import { formatProductContext } from '../product-context';
 
 export async function runSpecs(
 	product: ProductRecord,
+	ctx: ProductContext,
 	provider: LlmProvider
 ): Promise<{ mpn?: string }> {
-	const sku = product[BC_COLUMNS.sku];
-	const brandId = Number(product[BC_COLUMNS.brandId]);
-	const brand = await getBrandName(brandId, sku);
-	if (!brand) throw new Error(`Brand ID ${brandId} not found in BC brand registry`);
+	const brand = ctx.brandName;
 
 	// Verify the resolved brand name exists in our local registry.
 	// TODO: revisit when we have a UI — consider adding products dynamically or fetching from BC.
 	const entry = getBrandEntry(brand);
 	if (!entry) {
-		throw new Error(`Resolved brand "${brand}" (ID ${brandId}) not found in local brand registry`);
+		throw new Error(`Resolved brand "${brand}" not found in local brand registry`);
 	}
 	const url = entry.url;
 
 	const rawText = await fetchPageText(url);
-	const result = await callLlm('product-specs.md', cleanDom(rawText), provider);
+	const contextBlock = formatProductContext(ctx);
+	const userMessage = `${contextBlock}\n\n---\n\nManufacturer homepage content:\n\n${cleanDom(rawText)}`;
+	const result = await callLlm('product-specs.md', userMessage, provider);
 
 	const outputDir = join('output', brand, product[BC_COLUMNS.sku]);
 	mkdirSync(outputDir, { recursive: true });
