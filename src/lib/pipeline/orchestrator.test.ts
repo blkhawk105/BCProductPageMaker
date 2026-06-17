@@ -11,30 +11,33 @@ vi.mock('./steps/specs', async () => ({ runSpecs: mockRunSpecs }));
 vi.mock('./steps/customFields', async () => ({ runCustomFields: mockRunCustomFields }));
 vi.mock('./steps/copy', async () => ({ runCopy: mockRunCopy }));
 vi.mock('./steps/seo', async () => ({ runSeo: mockRunSeo }));
+vi.mock('$lib/api/bc-graphql', async () => ({
+	getBrandName: vi.fn().mockResolvedValue('Ted Brown Music')
+}));
 
 function createMockProduct(): ProductRecord {
 	return {
-		brandId: '',
-		upcEan: '',
-		categories: '',
-		item: 'Product',
-		id: '42',
-		name: 'Test Product',
-		sku: 'TP-001',
-		options: '',
-		inventoryTracking: 'None',
-		description: '',
-		customFields: '',
-		pageTitle: '',
-		metaDescription: '',
-		searchKeywords: '',
-		mpn: '',
-		Weight: '',
-		Width: '',
-		Height: '',
-		Depth: '',
-		IsVisible: '1',
-		IsFeatured: ''
+		'Brand ID': '1',
+		'UPC/EAN': '',
+		Categories: '',
+		Item: 'Product',
+		ID: '42',
+		Name: 'Test Product',
+		SKU: 'TP-001',
+		Options: '',
+		'Inventory Tracking': 'None',
+		Description: '',
+		'Custom Fields': '',
+		'Page Title': '',
+		'Meta Description': '',
+		'Search Keywords': '',
+		'Manufacturer Part Number': '',
+		'Weight:': '',
+		'Width:': '',
+		'Height:': '',
+		'Depth:': '',
+		'IsVisible:': '1',
+		'IsFeatured:': ''
 	};
 }
 
@@ -45,7 +48,9 @@ function setupDefaults() {
 		fields: [],
 		category: 'Brass',
 		unresolved: [],
-		skipped: false
+		skipped: false,
+		keptCategoryIds: [],
+		removedCategoriesCount: 0
 	});
 	mockRunCopy.mockResolvedValue({ description: 'A beautiful tenor saxophone.', sourceUrl: null });
 	mockRunSeo.mockResolvedValue({
@@ -66,7 +71,7 @@ describe('runPipeline', () => {
 		const allRows = [createMockProduct()] as ProductRecord[];
 		const result = await runPipeline(createMockProduct(), allRows, {} as never);
 
-		expect(result.item).toBe('12345');
+		expect(result.item).toBe('Product');
 		expect(result.id).toBe('42');
 		expect(result.name).toBe('Test Product');
 		expect(result.sku).toBe('TP-001');
@@ -107,14 +112,16 @@ describe('runPipeline', () => {
 			fields: [],
 			category: null,
 			unresolved: [],
-			skipped: true
+			skipped: true,
+			keptCategoryIds: [],
+			removedCategoriesCount: 0
 		});
 
 		const { runPipeline } = await import('./orchestrator');
 		const allRows = [createMockProduct()] as ProductRecord[];
 		const result = await runPipeline(createMockProduct(), allRows, {} as never);
 
-		expect(result.item).toBe('12345');
+		expect(result.item).toBe('Product');
 		expect(result.customFields).toBeUndefined();
 	});
 });
