@@ -18,32 +18,32 @@
 		"test:e2e": "playwright install && playwright test"
 	},
 	"devDependencies": {
-		"@eslint/compat": "^2.0.4",
+		"@eslint/compat": "^2.1.0",
 		"@eslint/js": "^10.0.1",
-		"@playwright/test": "^1.59.1",
+		"@playwright/test": "^1.61.0",
 		"@sveltejs/adapter-auto": "^7.0.1",
-		"@sveltejs/kit": "^2.57.0",
-		"@sveltejs/vite-plugin-svelte": "^7.0.0",
-		"@types/node": "^24",
+		"@sveltejs/kit": "^2.65.2",
+		"@sveltejs/vite-plugin-svelte": "^7.1.2",
+		"@types/node": "^24.13.2",
 		"eslint-config-prettier": "^10.1.8",
-		"eslint-plugin-svelte": "^3.17.0",
-		"globals": "^17.4.0",
+		"eslint-plugin-svelte": "^3.19.0",
+		"globals": "^17.6.0",
 		"image-size": "^2.0.2",
-		"playwright": "^1.59.1",
-		"svelte": "^5.55.2",
-		"svelte-check": "^4.4.6",
+		"playwright": "^1.61.0",
+		"svelte": "^5.56.3",
+		"svelte-check": "^4.6.0",
 		"tsx": "^4.22.4",
 		"typescript": "^6.0.3",
-		"typescript-eslint": "^8.58.1",
-		"vite": "catalog:",
+		"typescript-eslint": "^8.61.1",
+		"vite": "npm:@voidzero-dev/vite-plus-core@^0.2.0",
 		"vite-plus": "catalog:",
-		"vitest": "catalog:",
-		"vitest-browser-svelte": "^2.1.0"
+		"vitest": "npm:@voidzero-dev/vite-plus-test@^0.1.24",
+		"vitest-browser-svelte": "^2.1.1"
 	},
 	"packageManager": "pnpm@11.5.2",
 	"dependencies": {
 		"@inquirer/prompts": "^8.5.2",
 		"csv-parse": "^6.2.1",
-		"csv-stringify": "^6.7.0"
+		"csv-stringify": "^6.8.0"
 	}
 }
