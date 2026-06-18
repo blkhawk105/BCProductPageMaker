@@ -38,26 +38,35 @@ export async function runPipeline(
 	const variantRows = getVariantRows(allRows, product);
 	const ctx = buildProductContext(product, variantRows, brandName);
 
-	const specsResult = (await step('Specs', () => runSpecs(product, ctx, provider))) as Awaited<
-		ReturnType<typeof runSpecs>
-	>;
-	const cfResult = (await step('Custom Fields', () =>
-		runCustomFields(product, ctx, provider)
-	)) as Awaited<ReturnType<typeof runCustomFields>>;
-	const copyResult = (await step('Copy', () => runCopy(product, ctx, provider))) as Awaited<
-		ReturnType<typeof runCopy>
-	>;
-	const seoResult = (await step('SEO', () => runSeo(product, ctx, provider))) as Awaited<
-		ReturnType<typeof runSeo>
-	>;
-
-	// Assemble DiffRecord — only include properties that have a truthy value.
+	// Assemble identity fields upfront so they survive early returns.
 	const record: DiffRecord = {
 		item: product['Item'] ?? '',
 		id: product[BC_COLUMNS.id] ?? '',
 		name: product['Name'] ?? '',
 		sku
 	};
+
+	const specsResult = (await step('Specs', () => runSpecs(product, ctx, provider))) as Awaited<
+		ReturnType<typeof runSpecs>
+	>;
+	if (specsResult.skipped) {
+		console.warn(`[pipeline] Skipping product ${sku} — specs step was skipped`);
+		return record;
+	}
+	const cfResult = (await step('Custom Fields', () =>
+		runCustomFields(product, ctx, provider)
+	)) as Awaited<ReturnType<typeof runCustomFields>>;
+	const copyResult = (await step('Copy', () => runCopy(product, ctx, provider))) as Awaited<
+		ReturnType<typeof runCopy>
+	>;
+	if (!copyResult.description) {
+		console.warn(`[pipeline] Skipping product ${sku} — copy step produced no description`);
+		return record;
+	}
+	const seoResult = (await step('SEO', () => runSeo(product, ctx, provider))) as Awaited<
+		ReturnType<typeof runSeo>
+	>;
+
 	if (specsResult.mpn) record.mpn = specsResult.mpn;
 	// Emit categories column when any source categories were removed,
 	// so BC import can delete them. Write kept IDs (partial removal) or

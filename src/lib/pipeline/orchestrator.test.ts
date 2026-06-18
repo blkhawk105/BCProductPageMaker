@@ -124,4 +124,35 @@ describe('runPipeline', () => {
 		expect(result.item).toBe('Product');
 		expect(result.customFields).toBeUndefined();
 	});
+
+	it('returns identity fields early when specs step is skipped', async () => {
+		mockRunSpecs.mockResolvedValue({ skipped: true });
+
+		const { runPipeline } = await import('./orchestrator');
+		const allRows = [createMockProduct()] as ProductRecord[];
+		const result = await runPipeline(createMockProduct(), allRows, {} as never);
+
+		expect(result.item).toBe('Product');
+		expect(result.id).toBe('42');
+		expect(result.name).toBe('Test Product');
+		expect(result.sku).toBe('TP-001');
+		expect(result.mpn).toBeUndefined();
+		expect(result.description).toBeUndefined();
+	});
+
+	it('returns identity fields early when copy step produces no description', async () => {
+		setupDefaults();
+		mockRunCopy.mockResolvedValue({ description: '', sourceUrl: null });
+
+		const { runPipeline } = await import('./orchestrator');
+		const allRows = [createMockProduct()] as ProductRecord[];
+		const result = await runPipeline(createMockProduct(), allRows, {} as never);
+
+		expect(result.item).toBe('Product');
+		expect(result.id).toBe('42');
+		expect(result.name).toBe('Test Product');
+		expect(result.sku).toBe('TP-001');
+		expect(result.mpn).toBeUndefined(); // early return skips all step fields
+		expect(result.description).toBeUndefined();
+	});
 });
