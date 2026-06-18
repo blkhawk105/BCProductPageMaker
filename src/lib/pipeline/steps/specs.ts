@@ -1,7 +1,13 @@
 import { writeFileSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { callLlm } from '$lib/api/llm';
-import { fetchPageText } from '$lib/api/browser';
+import {
+	resolveProductPage,
+	ProductPageNotFoundError,
+	ProductPageNetworkError,
+	type ProductPageResult
+} from '$lib/api/productPage';
+import { flagForReview } from '$lib/pipeline/review-queue';
 import { getBrandEntry } from '$lib/registry/brands';
 import { BC_COLUMNS } from '$lib/csv/schema';
 import { cleanDom } from '$lib/utils/cleanDom';
@@ -14,8 +20,9 @@ export async function runSpecs(
 	product: ProductRecord,
 	ctx: ProductContext,
 	provider: LlmProvider
-): Promise<{ mpn?: string }> {
+): Promise<{ mpn?: string; skipped?: boolean }> {
 	const brand = ctx.brandName;
+	const sku = product[BC_COLUMNS.sku];
 
 	// Verify the resolved brand name exists in our local registry.
 	// TODO: revisit when we have a UI — consider adding products dynamically or fetching from BC.
@@ -23,19 +30,41 @@ export async function runSpecs(
 	if (!entry) {
 		throw new Error(`Resolved brand "${brand}" not found in local brand registry`);
 	}
-	const url = entry.url;
+	const outputDir = join('output', brand, sku);
 
-	const rawText = await fetchPageText(url);
+	let pageResult: ProductPageResult;
+	try {
+		pageResult = await resolveProductPage(entry, sku, brand);
+	} catch (err) {
+		if (err instanceof ProductPageNotFoundError) {
+			// Product page not locatable — skip with a flag file
+			flagForReview(outputDir, brand, sku, err.reason);
+			return { skipped: true };
+		}
+		if (err instanceof ProductPageNetworkError) {
+			// Infrastructure failure — surface clearly but still skip this product
+			console.error(`[specs] Network error for ${brand} ${sku}: ${err.message}`);
+			flagForReview(outputDir, brand, sku, `Network error: ${err.message}`);
+			return { skipped: true };
+		}
+		throw err;
+	}
+
 	const contextBlock = formatProductContext(ctx);
-	const userMessage = `${contextBlock}\n\n---\n\nManufacturer homepage content:\n\n${cleanDom(rawText)}`;
+	const userMessage = `${contextBlock}\n\n---\n\nManufacturer product page (${pageResult.url}):\n\n${cleanDom(pageResult.text)}`;
 	const result = await callLlm('product-specs.md', userMessage, provider);
 
-	const outputDir = join('output', brand, product[BC_COLUMNS.sku]);
 	mkdirSync(outputDir, { recursive: true });
 	writeFileSync(join(outputDir, 'product-features.md'), result, 'utf-8');
 
 	// Extract MPN from the raw features text for CSV column mapping
 	const mpn = extractMpn(result);
+
+	if (!result.includes('## Specifications')) {
+		console.warn(
+			`[specs] product-features.md missing ## Specifications — LLM may not have extracted structured specs. Review before continuing.`
+		);
+	}
 
 	return { mpn };
 }
