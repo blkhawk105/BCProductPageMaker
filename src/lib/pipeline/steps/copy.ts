@@ -1,8 +1,14 @@
 import { writeFileSync, mkdirSync, readFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { callLlm } from '$lib/api/llm';
-import { fetchPageText } from '$lib/api/browser';
-import { getBrandUrl } from '$lib/registry/brands';
+import {
+	resolveProductPage,
+	ProductPageNotFoundError,
+	ProductPageNetworkError,
+	type ProductPageResult
+} from '$lib/api/productPage';
+import { flagForReview } from '$lib/pipeline/review-queue';
+import { getBrandEntry } from '$lib/registry/brands';
 import type { ProductRecord } from '$lib/csv/schema';
 import type { ProductContext } from '../product-context';
 import type { LlmProvider } from '$lib/api/llm';
@@ -41,15 +47,26 @@ export async function runCopy(
 		customFieldsText = readFileSync(customFieldsPath, 'utf-8');
 	}
 
-	// Fetch manufacturer page content for research (per skill Step 1)
-	const brandUrl = getBrandUrl(brand);
-	let manufacturerPageText: string | null = null;
-	if (brandUrl) {
-		try {
-			manufacturerPageText = cleanDom(await fetchPageText(brandUrl));
-		} catch {
-			// Manufacturer page unavailable — skill says to fall back to specs
+	// Resolve verified product page via site search
+	const brandEntry = getBrandEntry(brand);
+	if (!brandEntry) {
+		throw new Error(`Resolved brand "${brand}" not found in local brand registry`);
+	}
+
+	let pageResult: ProductPageResult;
+	try {
+		pageResult = await resolveProductPage(brandEntry, sku, brand);
+	} catch (err) {
+		if (err instanceof ProductPageNotFoundError) {
+			flagForReview(outputDir, brand, sku, err.reason);
+			return { description: '', sourceUrl: null };
 		}
+		if (err instanceof ProductPageNetworkError) {
+			console.error(`[copy] Network error for ${brand} ${sku}: ${err.message}`);
+			flagForReview(outputDir, brand, sku, `Network error: ${err.message}`);
+			return { description: '', sourceUrl: null };
+		}
+		throw err;
 	}
 
 	const contextBlock = formatProductContext(ctx);
@@ -59,15 +76,25 @@ export async function runCopy(
 		'Spec table:',
 		featuresText,
 		customFieldsText ? `\nCustom fields:\n${customFieldsText}` : '',
-		manufacturerPageText ? `\nManufacturer page text (for reference):\n${manufacturerPageText}` : ''
+		`Manufacturer product page (${pageResult.url}):\n\n${cleanDom(pageResult.text)}`
 	].join('\n');
 
 	const result = await callLlm(SKILL_FILE, userMessage, provider);
 
+	// Detect conversational LLM response — fail loud instead of writing garbage.
+	const CONVERSATIONAL =
+		/^(thank you|how would you|i have reviewed|what would you|i can help|here are some|let me know)/i;
+	if (CONVERSATIONAL.test(result.trim())) {
+		throw new Error(
+			`LLM returned a conversational response instead of product copy for ${brand} ${sku}. ` +
+				`Source page: ${pageResult.url}`
+		);
+	}
+
 	// Extract the body copy from the LLM output.
 	// The skill produces: body copy paragraphs, then a source note line.
 	// We strip the source note and any trailing flags to get clean description text.
-	const { description, sourceUrl } = extractCopy(result);
+	const { description, sourceUrl } = extractCopy(result, pageResult.url);
 
 	// Write output
 	mkdirSync(outputDir, { recursive: true });
@@ -81,8 +108,8 @@ interface ExtractedCopy {
 	sourceUrl: string | null;
 }
 
-function extractCopy(text: string): ExtractedCopy {
-	let sourceUrl: string | null = null;
+function extractCopy(text: string, verifiedUrl?: string): ExtractedCopy {
+	let sourceUrl: string | null = verifiedUrl ?? null;
 	const lines = text.split('\n');
 
 	// Look for source note pattern
