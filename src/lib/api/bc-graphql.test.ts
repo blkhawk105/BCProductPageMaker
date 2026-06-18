@@ -1,6 +1,12 @@
 import { describe, it, expect, vi } from 'vite-plus/test';
 import { writeFileSync, existsSync, rmSync } from 'node:fs';
 
+// bc-graphql.ts statically imports getBrowser from browser.ts.
+// Mock it so modules with no actual browser dependency can load in CI.
+vi.mock('$lib/api/browser', () => ({
+	getBrowser: async () => ({ newPage: async () => ({ close: vi.fn() }) })
+}));
+
 // ---------------------------------------------------------------------------
 // flattenCategoryTree — pure function tests
 // ---------------------------------------------------------------------------
