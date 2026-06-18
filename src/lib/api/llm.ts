@@ -38,9 +38,11 @@ export function createProvider(config: ProviderConfig): LlmProvider {
 		case 'lm-studio':
 			return createLmStudioProvider(config);
 
-		default:
+		default: {
+			const providerName = config.provider as string;
 			throw new Error(
-				`Could not find provider: ${config.provider}. Please double check your configurations and try again.`
+				`Could not find provider: ${providerName}. Please double check your configurations and try again.`
 			);
+		}
 	}
 }
